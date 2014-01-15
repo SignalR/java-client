@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="library">
+    <target name="library">
+        <javadoc access="public" author="false" destdir="doc" nodeprecated="true" nodeprecatedlist="true" noindex="false" nonavbar="false" notree="false" packagenames="microsoft.aspnet.signalr.client.http.android" source="1.6" sourcepath="src:gen" splitindex="true" use="true" version="false">
+        	<arg value="-notimestamp" />    
+        </javadoc>
+        <jar destfile="bin/signalr-client-sdk-android.jar">
+            <fileset dir="doc" />
+            <fileset dir="src"/>
+            <fileset dir="bin/classes" includes="**/*.class" />
+        </jar>
+    </target>
+</project>
