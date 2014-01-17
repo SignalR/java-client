@@ -20,191 +20,194 @@ import microsoft.aspnet.signalr.client.http.Response;
  * ClientTransport base implementation over Http
  */
 public abstract class HttpClientTransport implements ClientTransport {
-	protected static final int BUFFER_SIZE = 1024;
+    protected static final int BUFFER_SIZE = 1024;
 
-	protected HttpConnection mHttpConnection;
-	protected boolean mStartedAbort = false;
-	protected SignalRFuture<Void> mAbortFuture = null;
+    protected HttpConnection mHttpConnection;
+    protected boolean mStartedAbort = false;
+    protected SignalRFuture<Void> mAbortFuture = null;
 
-	private Logger mLogger;
+    private Logger mLogger;
 
-	/**
-	 * Initializes the HttpClientTransport with a logger
-	 * @param logger logger to log actions
-	 */
-	public HttpClientTransport(Logger logger) {
-		this(logger, Platform.createHttpConnection(logger));
-	}
-	
-	public HttpClientTransport(Logger logger, HttpConnection httpConnection) {
-		if (logger == null) {
-			throw new IllegalArgumentException("logger");
-		}
+    /**
+     * Initializes the HttpClientTransport with a logger
+     * 
+     * @param logger
+     *            logger to log actions
+     */
+    public HttpClientTransport(Logger logger) {
+        this(logger, Platform.createHttpConnection(logger));
+    }
 
-		mHttpConnection = httpConnection;
-		mLogger = logger;
-	}
+    public HttpClientTransport(Logger logger, HttpConnection httpConnection) {
+        if (logger == null) {
+            throw new IllegalArgumentException("logger");
+        }
 
-	@Override
-	public SignalRFuture<NegotiationResponse> negotiate(final ConnectionBase connection) {
-		log("Start the negotiation with the server", LogLevel.Information);
+        mHttpConnection = httpConnection;
+        mLogger = logger;
+    }
 
-		String url = connection.getUrl() + "negotiate" + TransportHelper.getNegotiateQueryString(connection);
+    @Override
+    public SignalRFuture<NegotiationResponse> negotiate(final ConnectionBase connection) {
+        log("Start the negotiation with the server", LogLevel.Information);
 
-		Request get = new Request(Constants.HTTP_GET);
-		get.setUrl(url);
-		get.setVerb(Constants.HTTP_GET);
+        String url = connection.getUrl() + "negotiate" + TransportHelper.getNegotiateQueryString(connection);
 
-		connection.prepareRequest(get);
-		
-		final SignalRFuture<NegotiationResponse> negotiationFuture = new SignalRFuture<NegotiationResponse>();
+        Request get = new Request(Constants.HTTP_GET);
+        get.setUrl(url);
+        get.setVerb(Constants.HTTP_GET);
 
-		log("Execute the request", LogLevel.Verbose);
-		HttpConnectionFuture connectionFuture = mHttpConnection.execute(get, new ResponseCallback() {
+        connection.prepareRequest(get);
 
-			public void onResponse(Response response) {
-				try {
-					log("Response received", LogLevel.Verbose);
-					throwOnInvalidStatusCode(response);
+        final SignalRFuture<NegotiationResponse> negotiationFuture = new SignalRFuture<NegotiationResponse>();
 
-					log("Read response data to the end", LogLevel.Verbose);
-					String negotiationContent = response.readToEnd();
+        log("Execute the request", LogLevel.Verbose);
+        HttpConnectionFuture connectionFuture = mHttpConnection.execute(get, new ResponseCallback() {
 
-					log("Trigger onSuccess with negotiation data: " + negotiationContent, LogLevel.Verbose);
-					negotiationFuture.setResult(new NegotiationResponse(negotiationContent, connection.getJsonParser()));
+            public void onResponse(Response response) {
+                try {
+                    log("Response received", LogLevel.Verbose);
+                    throwOnInvalidStatusCode(response);
 
-				} catch (Throwable e) {
-					log(e);
-					negotiationFuture.triggerError(new NegotiationException("There was a problem in the negotiation with the server", e));
-				}
-			}
-		});
-		
-		FutureHelper.copyHandlers(connectionFuture, negotiationFuture);
+                    log("Read response data to the end", LogLevel.Verbose);
+                    String negotiationContent = response.readToEnd();
 
-		return negotiationFuture;
-	}
+                    log("Trigger onSuccess with negotiation data: " + negotiationContent, LogLevel.Verbose);
+                    negotiationFuture.setResult(new NegotiationResponse(negotiationContent, connection.getJsonParser()));
 
-	@Override
-	public SignalRFuture<Void> send(ConnectionBase connection, String data, final DataResultCallback callback) {
-		try {
-			log("Start sending data to the server: " + data, LogLevel.Information);
+                } catch (Throwable e) {
+                    log(e);
+                    negotiationFuture.triggerError(new NegotiationException("There was a problem in the negotiation with the server", e));
+                }
+            }
+        });
 
-			Request post = new Request(Constants.HTTP_POST);
-			post.setFormContent("data", data);
-			post.setUrl(connection.getUrl() + "send" + TransportHelper.getSendQueryString(this, connection));
-			post.setHeaders(connection.getHeaders());
-			post.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        FutureHelper.copyHandlers(connectionFuture, negotiationFuture);
 
-			connection.prepareRequest(post);
+        return negotiationFuture;
+    }
 
-			log("Execute the request", LogLevel.Verbose);
-			HttpConnectionFuture future = mHttpConnection.execute(post, new ResponseCallback() {
-				
-				@Override
-				public void onResponse(Response response) throws Exception {
-					log("Response received", LogLevel.Verbose);
-					throwOnInvalidStatusCode(response);
+    @Override
+    public SignalRFuture<Void> send(ConnectionBase connection, String data, final DataResultCallback callback) {
+        try {
+            log("Start sending data to the server: " + data, LogLevel.Information);
 
-					log("Read response to the end", LogLevel.Verbose);
-					String data = response.readToEnd();
+            Request post = new Request(Constants.HTTP_POST);
+            post.setFormContent("data", data);
+            post.setUrl(connection.getUrl() + "send" + TransportHelper.getSendQueryString(this, connection));
+            post.setHeaders(connection.getHeaders());
+            post.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-					if (data != null) {
-						log("Trigger onData with data: " + data, LogLevel.Verbose);
-						callback.onData(data);
-					}					
-				}
-			});
-			
-			return future;
-		} catch (Throwable e) {
-			log(e);
-			
-			SignalRFuture<Void> future = new SignalRFuture<Void>();
-			future.triggerError(e);
-			
-			return future;
-		}
-	}
+            connection.prepareRequest(post);
 
-	@Override
-	public SignalRFuture<Void> abort(ConnectionBase connection) {
-		synchronized (this) {
-			if (!mStartedAbort) {
-				log("Started aborting", LogLevel.Information);
-				mStartedAbort = true;
-				try {
-					String url = connection.getUrl() + "abort" + TransportHelper.getSendQueryString(this, connection);
+            log("Execute the request", LogLevel.Verbose);
+            HttpConnectionFuture future = mHttpConnection.execute(post, new ResponseCallback() {
 
-					Request post = new Request(Constants.HTTP_POST);
+                @Override
+                public void onResponse(Response response) throws Exception {
+                    log("Response received", LogLevel.Verbose);
+                    throwOnInvalidStatusCode(response);
 
-					post.setUrl(url);
-					post.setHeaders(connection.getHeaders());
+                    log("Read response to the end", LogLevel.Verbose);
+                    String data = response.readToEnd();
 
-					connection.prepareRequest(post);
+                    if (data != null) {
+                        log("Trigger onData with data: " + data, LogLevel.Verbose);
+                        callback.onData(data);
+                    }
+                }
+            });
 
-					log("Execute request", LogLevel.Verbose);
-					mAbortFuture = mHttpConnection.execute(post, new ResponseCallback() {
+            return future;
+        } catch (Throwable e) {
+            log(e);
 
-						@Override
-						public void onResponse(Response response) {
-							log("Finishing abort", LogLevel.Verbose);
-							mStartedAbort = false;
-						}
-					});
-					
-					return mAbortFuture;
+            SignalRFuture<Void> future = new SignalRFuture<Void>();
+            future.triggerError(e);
 
-				} catch (Throwable e) {
-					log(e);
-					log("Finishing abort", LogLevel.Verbose);
-					mStartedAbort = false;
+            return future;
+        }
+    }
 
-					SignalRFuture<Void> future = new SignalRFuture<Void>();
-					future.triggerError(e);
-					
-					return future;
-				}
-			} else {
-				return mAbortFuture;
-			}
-		}
-	}
+    @Override
+    public SignalRFuture<Void> abort(ConnectionBase connection) {
+        synchronized (this) {
+            if (!mStartedAbort) {
+                log("Started aborting", LogLevel.Information);
+                mStartedAbort = true;
+                try {
+                    String url = connection.getUrl() + "abort" + TransportHelper.getSendQueryString(this, connection);
 
-	protected void throwOnInvalidStatusCode(Response response) throws InvalidHttpStatusCodeException {
-		if (response.getStatus() < 200 || response.getStatus() > 299) {
-			String responseContent;
+                    Request post = new Request(Constants.HTTP_POST);
 
-			try {
-				responseContent = response.readToEnd();
-			} catch (IOException e) {
-				responseContent = "";
-			}
-			
-			StringBuilder headersString = new StringBuilder();
-			
-			for (String header : response.getHeaders().keySet()) {
-				headersString.append("[");
-				headersString.append(header);
-				headersString.append(": ");
-				for (String headerValue : response.getHeader(header)) {
-					headersString.append(headerValue);
-					headersString.append("; ");
-				};
-				headersString.append("]; ");
-			}
-			
-			throw new InvalidHttpStatusCodeException(response.getStatus(), responseContent, headersString.toString());
-		}
+                    post.setUrl(url);
+                    post.setHeaders(connection.getHeaders());
 
-	}
+                    connection.prepareRequest(post);
 
-	protected void log(String message, LogLevel level) {
-		mLogger.log(getName() + " - " + message, level);
-	}
+                    log("Execute request", LogLevel.Verbose);
+                    mAbortFuture = mHttpConnection.execute(post, new ResponseCallback() {
 
-	protected void log(Throwable error) {
-		mLogger.log(getName() + " - Error: " + error.toString(), LogLevel.Critical);
-	}
+                        @Override
+                        public void onResponse(Response response) {
+                            log("Finishing abort", LogLevel.Verbose);
+                            mStartedAbort = false;
+                        }
+                    });
+
+                    return mAbortFuture;
+
+                } catch (Throwable e) {
+                    log(e);
+                    log("Finishing abort", LogLevel.Verbose);
+                    mStartedAbort = false;
+
+                    SignalRFuture<Void> future = new SignalRFuture<Void>();
+                    future.triggerError(e);
+
+                    return future;
+                }
+            } else {
+                return mAbortFuture;
+            }
+        }
+    }
+
+    protected void throwOnInvalidStatusCode(Response response) throws InvalidHttpStatusCodeException {
+        if (response.getStatus() < 200 || response.getStatus() > 299) {
+            String responseContent;
+
+            try {
+                responseContent = response.readToEnd();
+            } catch (IOException e) {
+                responseContent = "";
+            }
+
+            StringBuilder headersString = new StringBuilder();
+
+            for (String header : response.getHeaders().keySet()) {
+                headersString.append("[");
+                headersString.append(header);
+                headersString.append(": ");
+                for (String headerValue : response.getHeader(header)) {
+                    headersString.append(headerValue);
+                    headersString.append("; ");
+                }
+                ;
+                headersString.append("]; ");
+            }
+
+            throw new InvalidHttpStatusCodeException(response.getStatus(), responseContent, headersString.toString());
+        }
+
+    }
+
+    protected void log(String message, LogLevel level) {
+        mLogger.log(getName() + " - " + message, level);
+    }
+
+    protected void log(Throwable error) {
+        mLogger.log(getName() + " - Error: " + error.toString(), LogLevel.Critical);
+    }
 
 }

@@ -39,73 +39,64 @@ import microsoft.aspnet.signalr.client.transport.DataResultCallback;
 import microsoft.aspnet.signalr.client.transport.ServerSentEventsTransport;
 
 public class ServerSentEventsTransportTests extends HttpClientTransportTests {
-	
-	@Before
-	public void setUp() {
-		Sync.reset();
-	}
-	
-	@Test
-	public void testSupportKeepAlive() throws Exception {
-		MockHttpConnection httpConnection = new MockHttpConnection();
-		ServerSentEventsTransport transport = new ServerSentEventsTransport(new NullLogger(), httpConnection);
-		
-		assertTrue(transport.supportKeepAlive());
-	}
-	
-	@Test
-	public void testStart() throws Exception {
-		
-		MockHttpConnection httpConnection = new MockHttpConnection();
-		ServerSentEventsTransport transport = new ServerSentEventsTransport(new NullLogger(), httpConnection);
-		
-		MockConnection connection = new MockConnection();
 
-		final MultiResult result = new MultiResult();
+    @Before
+    public void setUp() {
+        Sync.reset();
+    }
 
-		final String dataLock = "dataLock" + getTransportType().toString();
-		
-		SignalRFuture<Void> future = transport.start(connection, ConnectionType.InitialConnection, new DataResultCallback() {
-			
-			@Override
-			public void onData(String data) {
-				result.stringResult = data;
-				Sync.complete(dataLock);
-			}
-		});
-		
-		RequestEntry entry = httpConnection.getRequest();
-		entry.response.writeLine("data: initialized\n\n");
-		entry.response.writeLine("data: Hello");
-		entry.response.writeLine("world\n\n");
+    @Test
+    public void testSupportKeepAlive() throws Exception {
+        MockHttpConnection httpConnection = new MockHttpConnection();
+        ServerSentEventsTransport transport = new ServerSentEventsTransport(new NullLogger(), httpConnection);
 
-		Utils.finishMessage(entry);
+        assertTrue(transport.supportKeepAlive());
+    }
 
-		Sync.waitComplete(dataLock);
-		
-		String startUrl = 
-				connection.getUrl() + 
-				"connect?transport=serverSentEvents&connectionToken=" + 
-				Utils.encode(connection.getConnectionToken()) + 
-				"&connectionId=" + 
-				Utils.encode(connection.getConnectionId()) + 
-				"&messageId=" + 
-				Utils.encode(connection.getMessageId()) + 
-				"&groupsToken=" + 
-				Utils.encode(connection.getGroupsToken()) + 
-				"&connectionData=" + 
-				Utils.encode(connection.getConnectionData()) + 
-				"&" + connection.getQueryString();
+    @Test
+    public void testStart() throws Exception {
 
-		assertEquals(startUrl, entry.request.getUrl());
-		
-		assertEquals("Hello\nworld", result.stringResult);
-		assertTrue(future.isDone());
-	}
-	
-	@Override
-	protected TransportType getTransportType() {
-		return TransportType.LongPolling;
-	}
+        MockHttpConnection httpConnection = new MockHttpConnection();
+        ServerSentEventsTransport transport = new ServerSentEventsTransport(new NullLogger(), httpConnection);
+
+        MockConnection connection = new MockConnection();
+
+        final MultiResult result = new MultiResult();
+
+        final String dataLock = "dataLock" + getTransportType().toString();
+
+        SignalRFuture<Void> future = transport.start(connection, ConnectionType.InitialConnection, new DataResultCallback() {
+
+            @Override
+            public void onData(String data) {
+                result.stringResult = data;
+                Sync.complete(dataLock);
+            }
+        });
+
+        RequestEntry entry = httpConnection.getRequest();
+        entry.response.writeLine("data: initialized\n\n");
+        entry.response.writeLine("data: Hello");
+        entry.response.writeLine("world\n\n");
+
+        Utils.finishMessage(entry);
+
+        Sync.waitComplete(dataLock);
+
+        String startUrl = connection.getUrl() + "connect?transport=serverSentEvents&connectionToken=" + Utils.encode(connection.getConnectionToken())
+                + "&connectionId=" + Utils.encode(connection.getConnectionId()) + "&messageId=" + Utils.encode(connection.getMessageId()) + "&groupsToken="
+                + Utils.encode(connection.getGroupsToken()) + "&connectionData=" + Utils.encode(connection.getConnectionData()) + "&"
+                + connection.getQueryString();
+
+        assertEquals(startUrl, entry.request.getUrl());
+
+        assertEquals("Hello\nworld", result.stringResult);
+        assertTrue(future.isDone());
+    }
+
+    @Override
+    protected TransportType getTransportType() {
+        return TransportType.LongPolling;
+    }
 
 }

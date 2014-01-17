@@ -5,58 +5,58 @@ import java.util.Map;
 import com.google.gson.JsonElement;
 
 public class HubInvocation {
-	@com.google.gson.annotations.SerializedName("I")
-	private String mCallbackId;
-	
-	@com.google.gson.annotations.SerializedName("H")
-	private String mHub;
-	
-	@com.google.gson.annotations.SerializedName("M")
-	private String mMethod;
-	
-	@com.google.gson.annotations.SerializedName("A")
-	private JsonElement[] mArgs;
-	
-	@com.google.gson.annotations.SerializedName("S")
-	private Map<String, JsonElement> mState;
+    @com.google.gson.annotations.SerializedName("I")
+    private String mCallbackId;
 
-	public String getCallbackId() {
-		return mCallbackId;
-	}
+    @com.google.gson.annotations.SerializedName("H")
+    private String mHub;
 
-	public void setCallbackId(String callbackId) {
-		mCallbackId = callbackId;
-	}
+    @com.google.gson.annotations.SerializedName("M")
+    private String mMethod;
 
-	public String getHub() {
-		return mHub;
-	}
+    @com.google.gson.annotations.SerializedName("A")
+    private JsonElement[] mArgs;
 
-	public void setHub(String hub) {
-		mHub = hub;
-	}
+    @com.google.gson.annotations.SerializedName("S")
+    private Map<String, JsonElement> mState;
 
-	public String getMethod() {
-		return mMethod;
-	}
+    public String getCallbackId() {
+        return mCallbackId;
+    }
 
-	public void setMethod(String method) {
-		mMethod = method;
-	}
+    public void setCallbackId(String callbackId) {
+        mCallbackId = callbackId;
+    }
 
-	public JsonElement[] getArgs() {
-		return mArgs;
-	}
+    public String getHub() {
+        return mHub;
+    }
 
-	public void setArgs(JsonElement[] args) {
-		mArgs = args;
-	}
+    public void setHub(String hub) {
+        mHub = hub;
+    }
 
-	public Map<String, JsonElement> getState() {
-		return mState;
-	}
+    public String getMethod() {
+        return mMethod;
+    }
 
-	public void setState(Map<String, JsonElement> state) {
-		mState = state;
-	}
+    public void setMethod(String method) {
+        mMethod = method;
+    }
+
+    public JsonElement[] getArgs() {
+        return mArgs;
+    }
+
+    public void setArgs(JsonElement[] args) {
+        mArgs = args;
+    }
+
+    public Map<String, JsonElement> getState() {
+        return mState;
+    }
+
+    public void setState(Map<String, JsonElement> state) {
+        mState = state;
+    }
 }

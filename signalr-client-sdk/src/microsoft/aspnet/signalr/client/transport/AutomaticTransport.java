@@ -17,136 +17,141 @@ import microsoft.aspnet.signalr.client.http.HttpConnection;
  */
 public class AutomaticTransport extends HttpClientTransport {
 
-	private List<ClientTransport> mTransports;
-	private ClientTransport mRealTransport;
-	
-	/**
-	 * Initializes the transport with a NullLogger
-	 */
-	public AutomaticTransport() {
-		this(new NullLogger());
-	}
-	
-	/**
-	 * Initializes the transport with a logger
-	 * @param logger logger to log actions
-	 */
-	public AutomaticTransport(Logger logger) {
-		super(logger);
-		initialize(logger);
-	}
-	
-	/**
-	 * Initializes the transport with a logger and an httpConnection
-	 * @param logger the logger
-	 * @param httpConnection the httpConnection
-	 */
-	public AutomaticTransport(Logger logger, HttpConnection httpConnection) {
-		super(logger, httpConnection);
-		initialize(logger);
-	}
-	
-	private void initialize(Logger logger) {
-		mTransports = new ArrayList<ClientTransport>();
-		mTransports.add(new ServerSentEventsTransport(logger));
-		mTransports.add(new LongPollingTransport(logger));
-	}
-	
-	@Override
-	public String getName() {
-		if (mRealTransport == null) {
-			return null;
-		}
-		
-		return mRealTransport.getName();
-	}
+    private List<ClientTransport> mTransports;
+    private ClientTransport mRealTransport;
 
-	@Override
-	public boolean supportKeepAlive() {
-		if (mRealTransport != null) {
-			return mRealTransport.supportKeepAlive();
-		}
+    /**
+     * Initializes the transport with a NullLogger
+     */
+    public AutomaticTransport() {
+        this(new NullLogger());
+    }
 
-		return false;
-	}
-	
-	private void resolveTransport(final ConnectionBase connection, final ConnectionType connectionType, final DataResultCallback callback, final int currentTransportIndex, final SignalRFuture<Void> startFuture) {
-		final ClientTransport currentTransport = mTransports.get(currentTransportIndex);
-		
-		SignalRFuture<Void> transportStart = currentTransport.start(connection, connectionType, callback);
-		
-		transportStart.done(new Action<Void>() {
-			
-			@Override
-			public void run(Void obj) throws Exception {
-				// set the real transport and trigger end the start future
-				mRealTransport = currentTransport;
-				startFuture.setResult(null);
-			}
-		});
-		
-		
-		final ErrorCallback handleError = new ErrorCallback() {
-			
-			@Override
-			public void onError(Throwable error) {
-				
-				// if the transport is already started, forward the error
-				if (mRealTransport != null) {
-					startFuture.triggerError(error);
-					return;
-				}
-				
-				log(String.format("Auto: Faild to connect using transport %s. %s", currentTransport.getName(), error.toString()), LogLevel.Information);
-				int next = currentTransportIndex + 1;
-				if (next < mTransports.size()) {
-					resolveTransport(connection, connectionType, callback, next, startFuture);
-				} else {
-					startFuture.triggerError(error);
-				}
-			}
-		};
-		
-		transportStart.onError(handleError);
-		transportStart.onCancelled(new Runnable() {
-			
-			@Override
-			public void run() {
-				// if the transport is already started, forward the cancellation
-				if (mRealTransport != null) {
-					startFuture.cancel();
-					return;
-				}
-				
-				handleError.onError(new Exception("Operation cancelled"));
-			}
-		});
-	}
+    /**
+     * Initializes the transport with a logger
+     * 
+     * @param logger
+     *            logger to log actions
+     */
+    public AutomaticTransport(Logger logger) {
+        super(logger);
+        initialize(logger);
+    }
 
-	@Override
-	public SignalRFuture<Void> start(final ConnectionBase connection, final ConnectionType connectionType, final DataResultCallback callback) {
-		SignalRFuture<Void> startFuture = new SignalRFuture<Void>();
-		
-		resolveTransport(connection, connectionType, callback, 0, startFuture);
-		
-		return startFuture;
-	}
+    /**
+     * Initializes the transport with a logger and an httpConnection
+     * 
+     * @param logger
+     *            the logger
+     * @param httpConnection
+     *            the httpConnection
+     */
+    public AutomaticTransport(Logger logger, HttpConnection httpConnection) {
+        super(logger, httpConnection);
+        initialize(logger);
+    }
 
-	@Override
-	public SignalRFuture<Void> send(ConnectionBase connection, String data, DataResultCallback callback) {
-		if (mRealTransport != null) {
-			return mRealTransport.send(connection, data, callback);
-		}
-		
-		return null;
-	}
+    private void initialize(Logger logger) {
+        mTransports = new ArrayList<ClientTransport>();
+        mTransports.add(new ServerSentEventsTransport(logger));
+        mTransports.add(new LongPollingTransport(logger));
+    }
 
-	@Override
-	public SignalRFuture<Void> abort(ConnectionBase connection) {
-		if (mRealTransport != null) {
-			return mRealTransport.abort(connection);
-		}
-		
-		return null;
-	}
+    @Override
+    public String getName() {
+        if (mRealTransport == null) {
+            return null;
+        }
+
+        return mRealTransport.getName();
+    }
+
+    @Override
+    public boolean supportKeepAlive() {
+        if (mRealTransport != null) {
+            return mRealTransport.supportKeepAlive();
+        }
+
+        return false;
+    }
+
+    private void resolveTransport(final ConnectionBase connection, final ConnectionType connectionType, final DataResultCallback callback,
+            final int currentTransportIndex, final SignalRFuture<Void> startFuture) {
+        final ClientTransport currentTransport = mTransports.get(currentTransportIndex);
+
+        SignalRFuture<Void> transportStart = currentTransport.start(connection, connectionType, callback);
+
+        transportStart.done(new Action<Void>() {
+
+            @Override
+            public void run(Void obj) throws Exception {
+                // set the real transport and trigger end the start future
+                mRealTransport = currentTransport;
+                startFuture.setResult(null);
+            }
+        });
+
+        final ErrorCallback handleError = new ErrorCallback() {
+
+            @Override
+            public void onError(Throwable error) {
+
+                // if the transport is already started, forward the error
+                if (mRealTransport != null) {
+                    startFuture.triggerError(error);
+                    return;
+                }
+
+                log(String.format("Auto: Faild to connect using transport %s. %s", currentTransport.getName(), error.toString()), LogLevel.Information);
+                int next = currentTransportIndex + 1;
+                if (next < mTransports.size()) {
+                    resolveTransport(connection, connectionType, callback, next, startFuture);
+                } else {
+                    startFuture.triggerError(error);
+                }
+            }
+        };
+
+        transportStart.onError(handleError);
+        transportStart.onCancelled(new Runnable() {
+
+            @Override
+            public void run() {
+                // if the transport is already started, forward the cancellation
+                if (mRealTransport != null) {
+                    startFuture.cancel();
+                    return;
+                }
+
+                handleError.onError(new Exception("Operation cancelled"));
+            }
+        });
+    }
+
+    @Override
+    public SignalRFuture<Void> start(final ConnectionBase connection, final ConnectionType connectionType, final DataResultCallback callback) {
+        SignalRFuture<Void> startFuture = new SignalRFuture<Void>();
+
+        resolveTransport(connection, connectionType, callback, 0, startFuture);
+
+        return startFuture;
+    }
+
+    @Override
+    public SignalRFuture<Void> send(ConnectionBase connection, String data, DataResultCallback callback) {
+        if (mRealTransport != null) {
+            return mRealTransport.send(connection, data, callback);
+        }
+
+        return null;
+    }
+
+    @Override
+    public SignalRFuture<Void> abort(ConnectionBase connection) {
+        if (mRealTransport != null) {
+            return mRealTransport.abort(connection);
+        }
+
+        return null;
+    }
 }
