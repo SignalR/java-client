@@ -57,7 +57,7 @@ public class HubConnectionTests {
         connection.createHubProxy("myProxy1");
         connection.createHubProxy("myProxy2");
 
-        assertEquals(connection.getConnectionData(), "[{\"name\":\"myproxy1\"},{\"name\":\"myproxy2\"}]");
+        assertEquals(connection.getConnectionData(), "[{\"name\":\"myproxy2\"},{\"name\":\"myproxy1\"}]");
     }
 
     @Test
