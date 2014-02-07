@@ -102,8 +102,7 @@ public class ServerSentEventsTransport extends HttpClientTransport {
                         }
                     }
 
-                    // if the request finishes (it shouldn't) trigger an error
-                    throw new ServerSentEventResponseFinishedException();
+                    // if the request finishes, it means the connection was finalized
                 } catch (Throwable e) {
                     if (!mConnectionFuture.isCancelled()) {
                         mConnectionFuture.triggerError(e);
@@ -113,9 +112,5 @@ public class ServerSentEventsTransport extends HttpClientTransport {
         });
 
         return mConnectionFuture;
-    }
-
-    public class ServerSentEventResponseFinishedException extends Exception {
-        private static final long serialVersionUID = -2875517207910381093L;
     }
 }
