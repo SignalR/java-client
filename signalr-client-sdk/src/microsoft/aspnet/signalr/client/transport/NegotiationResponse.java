@@ -8,96 +8,98 @@ import com.google.gson.JsonParser;
  * Represents the negotiation response sent by the server in the handshake
  */
 public class NegotiationResponse {
-	public static final double INVALID_KEEP_ALIVE_TIMEOUT = -1;
+    public static final double INVALID_KEEP_ALIVE_TIMEOUT = -1;
 
-	private String mConnectionId;
-	private String mConnectionToken;
-	private String mUrl;
-	private String mProtocolVersion;
-	private double mDisconnectTimeout;
-	private boolean mTryWebSockets;
-	private double mKeepAliveTimeout;
+    private String mConnectionId;
+    private String mConnectionToken;
+    private String mUrl;
+    private String mProtocolVersion;
+    private double mDisconnectTimeout;
+    private boolean mTryWebSockets;
+    private double mKeepAliveTimeout;
 
-	/**
-	 * Initializes the negotiation response with Json data
-	 * @param jsonContent Json data
-	 */
-	public NegotiationResponse(String jsonContent, JsonParser parser) {
-		if (jsonContent == null || "".equals(jsonContent)) {
-			return;
-		}
-		
-		JsonObject json = parser.parse(jsonContent).getAsJsonObject();
+    /**
+     * Initializes the negotiation response with Json data
+     * 
+     * @param jsonContent
+     *            Json data
+     */
+    public NegotiationResponse(String jsonContent, JsonParser parser) {
+        if (jsonContent == null || "".equals(jsonContent)) {
+            return;
+        }
 
-		setConnectionId(json.get("ConnectionId").getAsString());
-		setConnectionToken(json.get("ConnectionToken").getAsString());
-		setUrl(json.get("Url").getAsString());
-		setProtocolVersion(json.get("ProtocolVersion").getAsString());
-		setDisconnectTimeout(json.get("DisconnectTimeout").getAsDouble());
-		setTryWebSockets(json.get("TryWebSockets").getAsBoolean());
+        JsonObject json = parser.parse(jsonContent).getAsJsonObject();
 
-		JsonElement keepAliveElement = json.get("KeepAliveTimeout");
-		if (keepAliveElement != null && !keepAliveElement.isJsonNull()) {
-			setKeepAliveTimeout(keepAliveElement.getAsDouble());
-		} else {
-			setKeepAliveTimeout(INVALID_KEEP_ALIVE_TIMEOUT);
-		}
+        setConnectionId(json.get("ConnectionId").getAsString());
+        setConnectionToken(json.get("ConnectionToken").getAsString());
+        setUrl(json.get("Url").getAsString());
+        setProtocolVersion(json.get("ProtocolVersion").getAsString());
+        setDisconnectTimeout(json.get("DisconnectTimeout").getAsDouble());
+        setTryWebSockets(json.get("TryWebSockets").getAsBoolean());
 
-	}
+        JsonElement keepAliveElement = json.get("KeepAliveTimeout");
+        if (keepAliveElement != null && !keepAliveElement.isJsonNull()) {
+            setKeepAliveTimeout(keepAliveElement.getAsDouble());
+        } else {
+            setKeepAliveTimeout(INVALID_KEEP_ALIVE_TIMEOUT);
+        }
 
-	public String getConnectionId() {
-		return mConnectionId;
-	}
+    }
 
-	public void setConnectionId(String connectionId) {
-		mConnectionId = connectionId;
-	}
+    public String getConnectionId() {
+        return mConnectionId;
+    }
 
-	public String getConnectionToken() {
-		return mConnectionToken;
-	}
+    public void setConnectionId(String connectionId) {
+        mConnectionId = connectionId;
+    }
 
-	public void setConnectionToken(String connectionToken) {
-		mConnectionToken = connectionToken;
-	}
+    public String getConnectionToken() {
+        return mConnectionToken;
+    }
 
-	public String getUrl() {
-		return mUrl;
-	}
+    public void setConnectionToken(String connectionToken) {
+        mConnectionToken = connectionToken;
+    }
 
-	public void setUrl(String url) {
-		mUrl = url;
-	}
+    public String getUrl() {
+        return mUrl;
+    }
 
-	public String getProtocolVersion() {
-		return mProtocolVersion;
-	}
+    public void setUrl(String url) {
+        mUrl = url;
+    }
 
-	public void setProtocolVersion(String protocolVersion) {
-		mProtocolVersion = protocolVersion;
-	}
+    public String getProtocolVersion() {
+        return mProtocolVersion;
+    }
 
-	public double getDisconnectTimeout() {
-		return mDisconnectTimeout;
-	}
+    public void setProtocolVersion(String protocolVersion) {
+        mProtocolVersion = protocolVersion;
+    }
 
-	public void setDisconnectTimeout(double disconnectTimeout) {
-		mDisconnectTimeout = disconnectTimeout;
-	}
+    public double getDisconnectTimeout() {
+        return mDisconnectTimeout;
+    }
 
-	public boolean shouldTryWebSockets() {
-		return mTryWebSockets;
-	}
+    public void setDisconnectTimeout(double disconnectTimeout) {
+        mDisconnectTimeout = disconnectTimeout;
+    }
 
-	public void setTryWebSockets(boolean tryWebSockets) {
-		mTryWebSockets = tryWebSockets;
-	}
+    public boolean shouldTryWebSockets() {
+        return mTryWebSockets;
+    }
 
-	public double getKeepAliveTimeout() {
-		return mKeepAliveTimeout;
-	}
+    public void setTryWebSockets(boolean tryWebSockets) {
+        mTryWebSockets = tryWebSockets;
+    }
 
-	public void setKeepAliveTimeout(double keepAliveTimeout) {
-		mKeepAliveTimeout = keepAliveTimeout;
-	}
+    public double getKeepAliveTimeout() {
+        return mKeepAliveTimeout;
+    }
+
+    public void setKeepAliveTimeout(double keepAliveTimeout) {
+        mKeepAliveTimeout = keepAliveTimeout;
+    }
 }

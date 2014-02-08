@@ -15,102 +15,102 @@ import microsoft.aspnet.signalr.client.http.Response;
  */
 public class ServerSentEventsTransport extends HttpClientTransport {
 
-	private static final int SSE_DATA_PREFIX_LENGTH = 6;
-	private static final String DATA_INITIALIZED = "data: initialized";
-	private static final String END_OF_SSE_MESSAGE = "\n\n";
+    private static final int SSE_DATA_PREFIX_LENGTH = 6;
+    private static final String DATA_INITIALIZED = "data: initialized";
+    private static final String END_OF_SSE_MESSAGE = "\n\n";
 
-	private SignalRFuture<Void> mConnectionFuture;
-	
-	/**
-	 * Initializes the transport with a logger
-	 * @param logger Logger to log actions
-	 */
-	public ServerSentEventsTransport(Logger logger) {
-		super(logger);
-	}
-	
-	/**
-	 * Initializes the transport with a logger
-	 * @param logger Logger to log actions
-	 * @param httpConnection HttpConnection for the transport
-	 */
-	public ServerSentEventsTransport(Logger logger, HttpConnection httpConnection) {
-		super(logger, httpConnection);
-	}
+    private SignalRFuture<Void> mConnectionFuture;
 
-	@Override
-	public String getName() {
-		return "serverSentEvents";
-	}
+    /**
+     * Initializes the transport with a logger
+     * 
+     * @param logger
+     *            Logger to log actions
+     */
+    public ServerSentEventsTransport(Logger logger) {
+        super(logger);
+    }
 
-	@Override
-	public boolean supportKeepAlive() {
-		return true;
-	}
+    /**
+     * Initializes the transport with a logger
+     * 
+     * @param logger
+     *            Logger to log actions
+     * @param httpConnection
+     *            HttpConnection for the transport
+     */
+    public ServerSentEventsTransport(Logger logger, HttpConnection httpConnection) {
+        super(logger, httpConnection);
+    }
 
-	@Override
-	public SignalRFuture<Void> start(ConnectionBase connection, ConnectionType connectionType, final DataResultCallback callback) {
-		log("Start the communication with the server", LogLevel.Information);
-		String url = connection.getUrl() + (connectionType == ConnectionType.InitialConnection ? "connect" : "reconnect")
-				+ TransportHelper.getReceiveQueryString(this, connection);
+    @Override
+    public String getName() {
+        return "serverSentEvents";
+    }
 
-		Request get = new Request(Constants.HTTP_GET);
+    @Override
+    public boolean supportKeepAlive() {
+        return true;
+    }
 
-		get.setUrl(url);
-		get.setHeaders(connection.getHeaders());
-		get.addHeader("Accept", "text/event-stream");
+    @Override
+    public SignalRFuture<Void> start(ConnectionBase connection, ConnectionType connectionType, final DataResultCallback callback) {
+        log("Start the communication with the server", LogLevel.Information);
+        String url = connection.getUrl() + (connectionType == ConnectionType.InitialConnection ? "connect" : "reconnect")
+                + TransportHelper.getReceiveQueryString(this, connection);
 
-		connection.prepareRequest(get);
+        Request get = new Request(Constants.HTTP_GET);
 
-		log("Execute the request", LogLevel.Verbose);
-		mConnectionFuture = mHttpConnection.execute(get, new ResponseCallback() {
+        get.setUrl(url);
+        get.setHeaders(connection.getHeaders());
+        get.addHeader("Accept", "text/event-stream");
 
-			@Override
-			public void onResponse(Response response) {
-				try {
-					log("Response received", LogLevel.Verbose);
-					throwOnInvalidStatusCode(response);
+        connection.prepareRequest(get);
 
-					mConnectionFuture.setResult(null);
+        log("Execute the request", LogLevel.Verbose);
+        mConnectionFuture = mHttpConnection.execute(get, new ResponseCallback() {
 
-					StringBuilder buffer = new StringBuilder();
-					String line = null;
+            @Override
+            public void onResponse(Response response) {
+                try {
+                    log("Response received", LogLevel.Verbose);
+                    throwOnInvalidStatusCode(response);
 
-					log("Read the response content by line", LogLevel.Verbose);
-					while ((line = response.readLine()) != null) {
-						buffer.append(line);
-						buffer.append("\n");
-						String currentData = buffer.toString();
-						if (currentData.endsWith(END_OF_SSE_MESSAGE)) {
-							currentData = currentData.trim();
-							log("Found new data: " + currentData, LogLevel.Verbose);
-							if (currentData.equals(DATA_INITIALIZED)) {
-								log("Initialization message found", LogLevel.Verbose);
-							} else {
-								String content = currentData.substring(SSE_DATA_PREFIX_LENGTH).trim();
+                    mConnectionFuture.setResult(null);
 
-								log("Trigger onData: " + content, LogLevel.Verbose);
-								callback.onData(content);
-							}
+                    StringBuilder buffer = new StringBuilder();
+                    String line = null;
 
-							buffer = new StringBuilder();
-						}
-					}
+                    log("Read the response content by line", LogLevel.Verbose);
+                    while ((line = response.readLine()) != null) {
+                        buffer.append(line);
+                        buffer.append("\n");
+                        String currentData = buffer.toString();
+                        if (currentData.endsWith(END_OF_SSE_MESSAGE)) {
+                            currentData = currentData.trim();
+                            log("Found new data: " + currentData, LogLevel.Verbose);
+                            if (currentData.equals(DATA_INITIALIZED)) {
+                                log("Initialization message found", LogLevel.Verbose);
+                            } else {
+                                String content = currentData.substring(SSE_DATA_PREFIX_LENGTH).trim();
 
-					// if the request finishes (it shouldn't) trigger an error
-					throw new ServerSentEventResponseFinishedException();
-				} catch (Throwable e) {
-					if (!mConnectionFuture.isCancelled()) {
-						mConnectionFuture.triggerError(e);
-					}
-				}
-			}
-		});
-		
-		return mConnectionFuture;
-	}
-	
-	public class ServerSentEventResponseFinishedException extends Exception {
-		private static final long serialVersionUID = -2875517207910381093L;		
-	}
+                                log("Trigger onData: " + content, LogLevel.Verbose);
+                                callback.onData(content);
+                            }
+
+                            buffer = new StringBuilder();
+                        }
+                    }
+
+                    // if the request finishes, it means the connection was finalized
+                } catch (Throwable e) {
+                    if (!mConnectionFuture.isCancelled()) {
+                        mConnectionFuture.triggerError(e);
+                    }
+                }
+            }
+        });
+
+        return mConnectionFuture;
+    }
 }

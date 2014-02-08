@@ -2,3 +2,4 @@ signalr-client-sdk-android/bin/*
 signalr-client-sdk/bin/*
 signalr-client-tests/bin/*
 signalr-client-sdk/lib/*.jar
+signalr-client-sdk/target/*

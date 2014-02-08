@@ -15,76 +15,79 @@ import microsoft.aspnet.signalr.client.Constants;
  * Response implementation based on an InputStream
  */
 public class StreamResponse implements Response {
-	private BufferedReader mReader;
-	private int mStatus;
-	private InputStream mOriginalStream;
-	Map<String, List<String>> mHeaders;
+    private BufferedReader mReader;
+    private int mStatus;
+    private InputStream mOriginalStream;
+    Map<String, List<String>> mHeaders;
 
-	/**
-	 * Initializes the StreamResponse
-	 * @param stream stream to read
-	 * @param status HTTP status code
-	 */
-	public StreamResponse(InputStream stream, int status, Map<String, List<String>> headers) {
-		mOriginalStream = stream;
-		mReader = new BufferedReader(new InputStreamReader(mOriginalStream, Constants.UTF8));
-		mHeaders = new HashMap<String, List<String>>(headers);
-		mStatus = status;
-	}
-	
-	public byte[] readAllBytes() throws IOException {
-		List<Byte> bytes = new ArrayList<Byte>();
-		
-		int bufferSize = 1024;
-		byte[] buffer = new byte[bufferSize];
-		
-		int bytesRead = mOriginalStream.read(buffer, 0, bufferSize);
-		while (bytesRead != -1) {
-			for (int i = 0; i < bytesRead; i++) {
-				bytes.add(buffer[i]);
-			}
+    /**
+     * Initializes the StreamResponse
+     * 
+     * @param stream
+     *            stream to read
+     * @param status
+     *            HTTP status code
+     */
+    public StreamResponse(InputStream stream, int status, Map<String, List<String>> headers) {
+        mOriginalStream = stream;
+        mReader = new BufferedReader(new InputStreamReader(mOriginalStream, Constants.UTF8));
+        mHeaders = new HashMap<String, List<String>>(headers);
+        mStatus = status;
+    }
 
-			bytesRead = mOriginalStream.read(buffer, 0, bufferSize);
-		}
-		
-		byte[] byteArray = new byte[bytes.size()];
-		
-		for (int i = 0; i < bytes.size(); i++) {
-			byteArray[i] = bytes.get(i).byteValue();
-		}
+    public byte[] readAllBytes() throws IOException {
+        List<Byte> bytes = new ArrayList<Byte>();
 
-		return byteArray;
-	}
+        int bufferSize = 1024;
+        byte[] buffer = new byte[bufferSize];
 
-	@Override
-	public String readToEnd() throws IOException {
-		StringBuilder sb = new StringBuilder();
-		String line = null;
-		while ((line = mReader.readLine()) != null) {
-			sb.append(line);
-			sb.append("\n");
-		}
+        int bytesRead = mOriginalStream.read(buffer, 0, bufferSize);
+        while (bytesRead != -1) {
+            for (int i = 0; i < bytesRead; i++) {
+                bytes.add(buffer[i]);
+            }
 
-		return sb.toString();
-	}
+            bytesRead = mOriginalStream.read(buffer, 0, bufferSize);
+        }
 
-	@Override
-	public int getStatus() {
-		return mStatus;
-	}
+        byte[] byteArray = new byte[bytes.size()];
 
-	@Override
-	public String readLine() throws IOException {
-		return mReader.readLine();
-	}
+        for (int i = 0; i < bytes.size(); i++) {
+            byteArray[i] = bytes.get(i).byteValue();
+        }
 
-	@Override
-	public Map<String, List<String>> getHeaders() {
-		return new HashMap<String, List<String>>(mHeaders);
-	}
+        return byteArray;
+    }
 
-	@Override
-	public List<String> getHeader(String headerName) {
-		return mHeaders.get(headerName);
-	}
+    @Override
+    public String readToEnd() throws IOException {
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        while ((line = mReader.readLine()) != null) {
+            sb.append(line);
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    @Override
+    public int getStatus() {
+        return mStatus;
+    }
+
+    @Override
+    public String readLine() throws IOException {
+        return mReader.readLine();
+    }
+
+    @Override
+    public Map<String, List<String>> getHeaders() {
+        return new HashMap<String, List<String>>(mHeaders);
+    }
+
+    @Override
+    public List<String> getHeader(String headerName) {
+        return mHeaders.get(headerName);
+    }
 }

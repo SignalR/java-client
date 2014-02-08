@@ -19,99 +19,106 @@ import microsoft.aspnet.signalr.client.http.HttpConnectionFuture.ResponseCallbac
  */
 class NetworkRunnable implements Runnable {
 
-	HttpURLConnection mConnection = null;
+    HttpURLConnection mConnection = null;
     InputStream mResponseStream = null;
     Logger mLogger;
     Request mRequest;
     HttpConnectionFuture mFuture;
-	ResponseCallback mCallback;
-	
-	Object mCloseLock = new Object();
-    
-	/**
-	 * Initializes the network runnable
-	 * @param logger logger to log activity
-	 * @param request The request to execute
-	 * @param future Future for the operation
-	 * @param callback Callback to invoke after the request execution
-	 */
+    ResponseCallback mCallback;
+
+    Object mCloseLock = new Object();
+
+    /**
+     * Initializes the network runnable
+     * 
+     * @param logger
+     *            logger to log activity
+     * @param request
+     *            The request to execute
+     * @param future
+     *            Future for the operation
+     * @param callback
+     *            Callback to invoke after the request execution
+     */
     public NetworkRunnable(Logger logger, Request request, HttpConnectionFuture future, ResponseCallback callback) {
-    	mLogger = logger;
-    	mRequest = request;
-    	mFuture = future;
-    	mCallback = callback;
+        mLogger = logger;
+        mRequest = request;
+        mFuture = future;
+        mCallback = callback;
     }
 
-	@Override
+    @Override
     public void run() {
         try {
-        	int responseCode = -1;
-        	synchronized (mCloseLock) {
-        		if (!mFuture.isCancelled()) {
-	        		if (mRequest == null) {
-	                    mFuture.triggerError(new IllegalArgumentException("request"));
-	                    return;
-	                }
-	
-	                mLogger.log("Execute the HTTP Request", LogLevel.Verbose);
-	                mRequest.log(mLogger);
-	                mConnection = createHttpURLConnection(mRequest);
-	
-	                mLogger.log("Request executed", LogLevel.Verbose);
-	                
-	                responseCode = mConnection.getResponseCode();
-	                
-	                if (responseCode < 400) {
-	                	mResponseStream = mConnection.getInputStream();
-	                } else {
-	                	mResponseStream = mConnection.getErrorStream();
-	                }
-        		}
-			}        	
-            
-        	if (mResponseStream != null && !mFuture.isCancelled()) {
-        		mCallback.onResponse(new StreamResponse(mResponseStream, responseCode, mConnection.getHeaderFields()));
-        		mFuture.setResult(null);
-        	}
+            int responseCode = -1;
+            synchronized (mCloseLock) {
+                if (!mFuture.isCancelled()) {
+                    if (mRequest == null) {
+                        mFuture.triggerError(new IllegalArgumentException("request"));
+                        return;
+                    }
+
+                    mLogger.log("Execute the HTTP Request", LogLevel.Verbose);
+                    mRequest.log(mLogger);
+                    mConnection = createHttpURLConnection(mRequest);
+
+                    mLogger.log("Request executed", LogLevel.Verbose);
+
+                    responseCode = mConnection.getResponseCode();
+
+                    if (responseCode < 400) {
+                        mResponseStream = mConnection.getInputStream();
+                    } else {
+                        mResponseStream = mConnection.getErrorStream();
+                    }
+                }
+            }
+
+            if (mResponseStream != null && !mFuture.isCancelled()) {
+                mCallback.onResponse(new StreamResponse(mResponseStream, responseCode, mConnection.getHeaderFields()));
+                mFuture.setResult(null);
+            }
         } catch (Throwable e) {
-        	if (!mFuture.isCancelled()) {
-	        	if (mConnection != null) {
-	                mConnection.disconnect();
-	            }
-	        	
-	            mLogger.log("Error executing request: " + e.getMessage(), LogLevel.Critical);
-	            mFuture.triggerError(e);
-        	}
+            if (!mFuture.isCancelled()) {
+                if (mConnection != null) {
+                    mConnection.disconnect();
+                }
+
+                mLogger.log("Error executing request: " + e.getMessage(), LogLevel.Critical);
+                mFuture.triggerError(e);
+            }
         } finally {
-        	closeStreamAndConnection();
+            closeStreamAndConnection();
         }
     }
 
-	/**
-	 * Closes the stream and connection, if possible
-	 */
-	void closeStreamAndConnection() {
-		synchronized (mCloseLock) {
-			if (mResponseStream != null) {
-				try {
-					mResponseStream.close();
-				} catch (IOException e) {
-				}
-			}
-			
-			if (mConnection != null) {
-				mConnection.disconnect();
-			}
-		}
-	}
-	
-	/**
-	 * Creates an HttpURLConnection
-	 * @param request The request info
-	 * @return An HttpURLConnection to execute the request
-	 * @throws IOException
-	 */
-	static HttpURLConnection createHttpURLConnection(Request request) throws IOException {
+    /**
+     * Closes the stream and connection, if possible
+     */
+    void closeStreamAndConnection() {
+        synchronized (mCloseLock) {
+            if (mResponseStream != null) {
+                try {
+                    mResponseStream.close();
+                } catch (IOException e) {
+                }
+            }
+
+            if (mConnection != null) {
+                mConnection.disconnect();
+            }
+        }
+    }
+
+    /**
+     * Creates an HttpURLConnection
+     * 
+     * @param request
+     *            The request info
+     * @return An HttpURLConnection to execute the request
+     * @throws IOException
+     */
+    static HttpURLConnection createHttpURLConnection(Request request) throws IOException {
         URL url = new URL(request.getUrl());
 
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -125,7 +132,7 @@ class NetworkRunnable implements Runnable {
         }
 
         if (request.getContent() != null) {
-        	connection.setDoOutput(true);
+            connection.setDoOutput(true);
             OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
             String requestContent = request.getContent();
             out.write(requestContent);

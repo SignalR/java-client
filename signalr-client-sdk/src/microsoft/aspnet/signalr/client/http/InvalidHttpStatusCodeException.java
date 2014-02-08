@@ -5,9 +5,9 @@ package microsoft.aspnet.signalr.client.http;
  */
 public class InvalidHttpStatusCodeException extends Exception {
 
-	private static final long serialVersionUID = 7073157073424850921L;
+    private static final long serialVersionUID = 7073157073424850921L;
 
-	public InvalidHttpStatusCodeException(int statusCode, String responseContent, String responseHeaders) {
-		super("Invalid status code: " + statusCode + "\nResponse: " + responseContent + "\nHeaders: " + responseHeaders);
-	}
+    public InvalidHttpStatusCodeException(int statusCode, String responseContent, String responseHeaders) {
+        super("Invalid status code: " + statusCode + "\nResponse: " + responseContent + "\nHeaders: " + responseHeaders);
+    }
 }
