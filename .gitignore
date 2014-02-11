@@ -3,3 +3,8 @@ signalr-client-sdk/bin/*
 signalr-client-tests/bin/*
 signalr-client-sdk/lib/*.jar
 signalr-client-sdk/target/*
+signalr-client-tests/SignalRTestServer/*.suo
+signalr-client-tests/SignalRTestServer/bin/*
+signalr-client-tests/SignalRTestServer/obj/*
+signalr-client-tests/SignalRTestServer/packages
+signalr-client-tests/SignalRTestServer/*.user

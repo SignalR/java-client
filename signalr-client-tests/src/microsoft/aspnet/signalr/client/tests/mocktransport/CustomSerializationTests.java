@@ -1,4 +1,4 @@
-package microsoft.aspnet.signalr.client.tests;
+package microsoft.aspnet.signalr.client.tests.mocktransport;
 
 import static org.junit.Assert.*;
 
