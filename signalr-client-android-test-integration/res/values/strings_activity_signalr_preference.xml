@@ -1,0 +1,12 @@
+<resources>
+
+    <string name="title_activity_signalr_preference">Settings</string>
+
+    <!-- General settings -->
+    <string name="pref_header_general">General</string>
+	
+	<string name="pref_signalr_title_url">SignalR Server URL</string>
+    <string name="pref_signalr_url">http://10.0.0.1:10001/</string>
+    <string name="pref_title_log_post_url">Log POST URL</string>
+    <string name="pref_log_post_url"></string>
+</resources>

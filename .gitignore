@@ -8,3 +8,7 @@ signalr-client-tests/SignalRTestServer/bin/*
 signalr-client-tests/SignalRTestServer/obj/*
 signalr-client-tests/SignalRTestServer/packages
 signalr-client-tests/SignalRTestServer/*.user
+signalr-client-android-test-integration/bin/*
+signalr-client-android-test-integration/gen/*
+
+signalr-client-android-test-integration/libs/gson-2.2.2.jar

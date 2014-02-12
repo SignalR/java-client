@@ -1,0 +1,517 @@
+/*
+Copyright (c) Microsoft Open Technologies, Inc.
+All Rights Reserved
+Apache 2.0 License
+ 
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ 
+See the Apache Version 2.0 License for specific language governing permissions and limitations under the License.
+ */
+package microsoft.aspnet.signalr.client.android.test.integration.tests;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.UUID;
+
+import microsoft.aspnet.signalr.client.ConnectionState;
+import microsoft.aspnet.signalr.client.ErrorCallback;
+import microsoft.aspnet.signalr.client.MessageReceivedHandler;
+import microsoft.aspnet.signalr.client.StateChangedCallback;
+import microsoft.aspnet.signalr.client.android.test.integration.ApplicationContext;
+import microsoft.aspnet.signalr.client.android.test.integration.TransportType;
+import microsoft.aspnet.signalr.client.android.test.integration.framework.TestCase;
+import microsoft.aspnet.signalr.client.android.test.integration.framework.TestGroup;
+import microsoft.aspnet.signalr.client.android.test.integration.framework.TestResult;
+import microsoft.aspnet.signalr.client.android.test.integration.framework.TestStatus;
+import microsoft.aspnet.signalr.client.android.test.integration.framework.Util;
+import microsoft.aspnet.signalr.client.hubs.HubConnection;
+import microsoft.aspnet.signalr.client.hubs.HubException;
+import microsoft.aspnet.signalr.client.hubs.HubProxy;
+import microsoft.aspnet.signalr.client.transport.ClientTransport;
+
+import android.util.Log;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+
+public class MiscTests extends TestGroup {
+    
+	private TestCase createBasicConnectionFlowTest(String name, final TransportType transportType) {
+		TestCase test = new TestCase() {
+		    
+		    private InteralTestData testData;
+		    
+			@Override
+			protected TestResult executeTest() {
+				try {
+				    HubConnection connection = ApplicationContext.createHubConnection();
+				    ClientTransport transport = ApplicationContext.createTransport(transportType);
+				    
+				    testData = new InteralTestData();
+				    testData.connectionStates.add(connection.getState());
+				    connection.stateChanged(new StateChangedCallback() {
+                        
+                        @Override
+                        public void stateChanged(ConnectionState oldState, ConnectionState newState) {
+                            testData.connectionStates.add(newState);
+                        }
+                    });
+				    
+				    connection.received(new MessageReceivedHandler() {
+
+                        @Override
+                        public void onMessageReceived(JsonElement json) {
+                            testData.receivedMessages.add(json);
+                        }
+                    });
+                    
+                    connection.closed(new Runnable() {
+                        
+                        @Override
+                        public void run() {
+                            testData.connectionWasClosed = true;
+                        }
+                    });
+				    
+				    HubProxy proxy = connection.createHubProxy("integrationTestsHub");
+				    proxy.subscribe(new Object() {
+				           
+	                    @SuppressWarnings("unused")
+                        public void Echo(String data) {
+                            testData.receivedData.add(data);
+                        }
+                    });
+	                    
+				    String data = UUID.randomUUID().toString();
+				    
+				    connection.start(transport).get();
+				    
+				    proxy.setState("myVar", new JsonPrimitive(1));
+				    proxy.invoke("echo", data);
+				    proxy.invoke("updateState", "myVar", 2);
+				    
+				    ApplicationContext.wait(2);
+				    
+				    connection.stop();
+
+				    ApplicationContext.wait(2);
+				    
+				    TestResult result = new TestResult();
+				    result.setStatus(TestStatus.Passed);
+				    result.setTestCase(this);
+				    
+				    //validations
+				    
+				    if (!Util.compareArrays(
+				            new ConnectionState[] {
+				                    ConnectionState.Disconnected, 
+				                    ConnectionState.Connecting, 
+				                    ConnectionState.Connected, 
+				                    ConnectionState.Disconnected},
+				            testData.connectionStates.toArray())) {
+				        return createResultFromException(new Exception("The connection states were incorrect"));
+				    }
+				    
+				    if (testData.receivedMessages.size() == 0) {
+				        return createResultFromException(new Exception("Messages not received"));
+				    }
+				    
+				    if (!testData.connectionWasClosed) {
+				        return createResultFromException(new Exception("Conneciton was not closed"));
+				    }
+				    
+				    if (testData.receivedData.size() != 1 || !testData.receivedData.get(0).toString().equals(data)) {
+				        return createResultFromException(new Exception("Invalid received data"));
+				    }
+				    
+				    // pending: validate tracing messages
+				    
+					return result;
+				} catch (Exception e) {
+					return createResultFromException(e);
+				}
+			}
+		};
+		
+		test.setName(name);
+
+		return test;
+	}
+
+	class InteralTestData {
+        List<ConnectionState> connectionStates = new ArrayList<ConnectionState>();
+        List<JsonElement> receivedMessages = new ArrayList<JsonElement>();
+        boolean connectionWasClosed = false;
+        List<Throwable> errors = new ArrayList<Throwable>();
+        List<Object> receivedData = new ArrayList<Object>();
+    }
+	
+	private TestCase createErrorHandledAndConnectionContinuesTest(String name, final TransportType transportType) {
+        TestCase test = new TestCase() {
+            
+            InteralTestData testData;
+            
+            @Override
+            protected TestResult executeTest() {
+                try {
+                    HubConnection connection = ApplicationContext.createHubConnection();
+                    ClientTransport transport = ApplicationContext.createTransport(transportType);
+                    
+                    testData = new InteralTestData();
+                    
+                    connection.received(new MessageReceivedHandler() {
+
+                        @Override
+                        public void onMessageReceived(JsonElement json) {
+                            testData.receivedMessages.add(json);
+                        }
+                    });
+                    
+                    connection.error(new ErrorCallback() {
+                        
+                        @Override
+                        public void onError(Throwable error) {
+                            testData.errors.add(error);
+                        }
+                    });
+                    
+                    HubProxy proxy = connection.createHubProxy("integrationTestsHub");
+                    
+                    proxy.subscribe(new Object() {
+                        @SuppressWarnings("unused")
+                        public void echo(String data) {
+                            testData.receivedData.add(data);
+                        }
+                    });
+                    
+                    String data = UUID.randomUUID().toString();
+                    
+                    connection.start(transport).get();
+                    
+                    proxy.invoke("triggerError");
+                    
+                    ApplicationContext.wait(1);
+                    
+                    proxy.invoke("echo", data);
+                    
+                    ApplicationContext.wait(2);
+                    
+                    connection.stop();
+
+                    ApplicationContext.wait(2);
+                    
+                    TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+                    
+                    //validations
+                    
+                    if (testData.receivedMessages.size() == 0) {
+                        return createResultFromException(new Exception("Messages expected"));
+                    }
+                    
+                    if (testData.errors.size() != 1 || testData.errors.get(0).getClass() != HubException.class) {
+                        return createResultFromException(new Exception("Expected one error"));
+                    }
+                    
+                    if (testData.receivedData.size() != 1 || !testData.receivedData.get(0).toString().equals(data)) {
+                        return createResultFromException(new Exception("Invalid received data"));
+                    }
+                    
+                    // pending: validate tracing messages
+                    
+                    return result;
+                } catch (Exception e) {
+                    return createResultFromException(e);
+                }
+            }
+        };
+        
+        test.setName(name);
+
+        return test;
+    }
+	
+	private TestCase createMessagesToGroupsTest(String name, final TransportType transportType) {
+        TestCase test = new TestCase() {
+            
+            InteralTestData testData;
+            
+            @Override
+            protected TestResult executeTest() {
+                try {
+                    HubConnection connection = ApplicationContext.createHubConnection();
+                    ClientTransport transport = ApplicationContext.createTransport(transportType);
+                    
+                    testData = new InteralTestData();
+                    
+                    HubProxy proxy = connection.createHubProxy("integrationTestsHub");
+                    
+                    proxy.subscribe(new Object() {
+                        @SuppressWarnings("unused")
+                        public void echo(String data) {
+                            testData.receivedData.add(data);
+                        }
+                    });
+                    
+                    connection.start(transport).get();
+                    
+                    proxy.invoke("sendMessageToGroup", "group1", "message1").get();
+                    
+                    ApplicationContext.wait(2);
+                    
+                    proxy.invoke("joinGroup", "group1").get();
+
+                    ApplicationContext.wait(2);
+                    
+                    proxy.invoke("sendMessageToGroup", "group1", "message2").get();
+                    
+                    ApplicationContext.wait(2);
+                    
+                    proxy.invoke("leaveGroup", "group1").get();
+                    
+                    ApplicationContext.wait(2);
+                    
+                    proxy.invoke("sendMessageToGroup", "group1", "message3").get();
+                    
+                    ApplicationContext.wait(2);
+                    
+                    connection.stop();
+
+                    ApplicationContext.wait(2);
+                    
+                    TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+                    
+                    //validations
+                    
+                    if (testData.receivedData.size() != 1 || !testData.receivedData.get(0).equals("message2")) {
+                        return createResultFromException(new Exception("Expected only one message with value 'message2'"));
+                    }
+                    
+                    return result;
+                } catch (Exception e) {
+                    return createResultFromException(e);
+                }
+            }
+        };
+        
+        test.setName(name);
+
+        return test;
+    }
+	
+	private TestCase createDisconnectServerTest(String name, final TransportType transportType) {
+        TestCase test = new TestCase() {
+            
+            InteralTestData testData;
+            
+            @Override
+            protected TestResult executeTest() {
+                try {
+                    HubConnection connection = ApplicationContext.createHubConnection();
+                    ClientTransport transport = ApplicationContext.createTransport(transportType);
+                    
+                    testData = new InteralTestData();
+                    
+                    connection.reconnecting(new Runnable() {
+                        
+                        @Override
+                        public void run() {
+                            testData.connectionStates.add(ConnectionState.Reconnecting);
+                        }
+                    });
+                    
+                    connection.start(transport).get();
+                    
+                    ApplicationContext.showMessage("Break connection with the server").get();
+                    
+                    long current = Calendar.getInstance().getTimeInMillis();
+                    
+                    while (Calendar.getInstance().getTimeInMillis() - current < 60 * 1000) {
+                        if (connection.getState() == ConnectionState.Disconnected) {
+                            break;
+                        }
+                    }
+                    
+                    TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+                    
+                    ApplicationContext.showMessage("Enable connection with the server").get();
+                    
+                    //validations
+                    
+                    if (connection.getState() != ConnectionState.Disconnected) {
+                        return createResultFromException(new Exception("Connection should be disconnected"));
+                    }
+                    
+                    if (!testData.connectionStates.contains(ConnectionState.Reconnecting)) {
+                        return createResultFromException(new Exception("The client should have tried to reconnect"));
+                    }
+                    
+                    return result;
+                } catch (Exception e) {
+                    return createResultFromException(e);
+                }
+            }
+        };
+        
+        test.setName(name);
+
+        return test;
+    }
+	
+	private TestCase createReconnectServerTest(String name, final TransportType transportType) {
+        TestCase test = new TestCase() {
+            
+            InteralTestData testData;
+            
+            @Override
+            protected TestResult executeTest() {
+                try {
+                    HubConnection connection = ApplicationContext.createHubConnection();
+                    ClientTransport transport = ApplicationContext.createTransport(transportType);
+                    
+                    testData = new InteralTestData();
+                    
+                    connection.reconnecting(new Runnable() {
+                        
+                        @Override
+                        public void run() {
+                            testData.connectionStates.add(ConnectionState.Reconnecting);
+                        }
+                    });
+                    
+                    connection.start(transport).get();
+                    
+                    ApplicationContext.showMessage("Break connection with the server for 10 seconds and re-enable it").get();
+                    
+                    ApplicationContext.wait(5);
+                    
+                    TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+                    
+                    //validations
+                    
+                    if (connection.getState() != ConnectionState.Connected) {
+                        return createResultFromException(new Exception("Connection should be connected"));
+                    }
+                    
+                    if (!testData.connectionStates.contains(ConnectionState.Reconnecting)) {
+                        return createResultFromException(new Exception("The client should have tried to reconnect"));
+                    }
+                    
+                    return result;
+                } catch (Exception e) {
+                    return createResultFromException(e);
+                }
+            }
+        };
+        
+        test.setName(name);
+
+        return test;
+    }
+	
+	private TestCase createConnectToUnavailableServerTest(String name, final TransportType transportType) {
+        TestCase test = new TestCase() {
+            
+            InteralTestData testData;
+            
+            @Override
+            protected TestResult executeTest() {
+                try {
+                    HubConnection connection = ApplicationContext.createHubConnectionWithInvalidURL();
+                    ClientTransport transport = ApplicationContext.createTransport(transportType);
+                    testData = new InteralTestData();
+                    
+                    connection.error(new ErrorCallback() {
+                        
+                        @Override
+                        public void onError(Throwable error) {
+                            int a = 1;
+                            int b = a + 2;
+                            int c = b;
+                        }
+                    });
+                    
+                    connection.start(transport)
+                        .onError(new ErrorCallback() {
+                            
+                            @Override
+                            public void onError(Throwable error) {
+                                testData.errors.add(error);
+                            }
+                        });
+                    
+                    
+                    ApplicationContext.wait(5);
+                    
+                    TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+                    
+                    //validations
+                    
+                    if (connection.getState() != ConnectionState.Disconnected) {
+                        return createResultFromException(new Exception("Connection should be disconnected"));
+                    }
+                    
+                    if (testData.errors.size() == 0) {
+                        return createResultFromException(new Exception("Exception should have been thrown"));
+                    }
+                    
+                    return result;
+                } catch (Exception e) {
+                    return createResultFromException(e);
+                }
+            }
+        };
+        
+        test.setName(name);
+
+        return test;
+    }
+
+	public MiscTests() {
+		super("SignalR tests");
+
+		for (TransportType transportType : TransportType.values()) {
+            this.addTest(createBasicConnectionFlowTest("Basic connection flow - " + transportType.name(), transportType));
+        }
+		
+		for (TransportType transportType : TransportType.values()) {
+		    this.addTest(createMessagesToGroupsTest("Join and leave groups - " + transportType.name(), transportType));
+		}
+		
+		for (TransportType transportType : TransportType.values()) {
+            this.addTest(createErrorHandledAndConnectionContinuesTest("Error handled and connection continues - " + transportType.name(), transportType));
+        }
+		
+		for (TransportType transportType : TransportType.values()) {
+            this.addTest(createDisconnectServerTest("Disconnect server after connection - " + transportType.name(), transportType));
+        }
+		
+		for (TransportType transportType : TransportType.values()) {
+            this.addTest(createReconnectServerTest("Reconnect server after brief disconnection - " + transportType.name(), transportType));
+        }
+		
+		for (TransportType transportType : TransportType.values()) {
+            this.addTest(createConnectToUnavailableServerTest("Connecto to unavailable server - " + transportType.name(), transportType));
+        }
+	}
+}
