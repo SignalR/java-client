@@ -118,6 +118,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IntegrationTestsHub.cs" />
     <Compile Include="TestEndpoint.cs" />
     <Compile Include="TestHub.cs" />
     <Compile Include="Controllers\HomeController.cs" />
