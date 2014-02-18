@@ -79,7 +79,7 @@ public class AutomaticTransport extends HttpClientTransport {
             final int currentTransportIndex, final SignalRFuture<Void> startFuture) {
         final ClientTransport currentTransport = mTransports.get(currentTransportIndex);
 
-        SignalRFuture<Void> transportStart = currentTransport.start(connection, connectionType, callback);
+        final SignalRFuture<Void> transportStart = currentTransport.start(connection, connectionType, callback);
 
         transportStart.done(new Action<Void>() {
 
@@ -113,13 +113,14 @@ public class AutomaticTransport extends HttpClientTransport {
         };
 
         transportStart.onError(handleError);
-        transportStart.onCancelled(new Runnable() {
+        
+        startFuture.onCancelled(new Runnable() {
 
             @Override
             public void run() {
                 // if the transport is already started, forward the cancellation
                 if (mRealTransport != null) {
-                    startFuture.cancel();
+                    transportStart.cancel();
                     return;
                 }
 

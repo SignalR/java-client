@@ -17,16 +17,18 @@ Apache 2.0 License
  
 See the Apache Version 2.0 License for specific language governing permissions and limitations under the License.
  */
-package microsoft.aspnet.signalr.client.android.test.integration;
+package microsoft.aspnet.signalr.client.test.integration.android;
 
 import java.net.URI;
 import java.util.List;
 
-import microsoft.aspnet.signalr.client.android.test.integration.framework.TestCase;
-import microsoft.aspnet.signalr.client.android.test.integration.framework.TestExecutionCallback;
-import microsoft.aspnet.signalr.client.android.test.integration.framework.TestGroup;
-import microsoft.aspnet.signalr.client.android.test.integration.framework.TestResult;
-import microsoft.aspnet.signalr.client.android.test.integration.tests.MiscTests;
+import microsoft.aspnet.signalr.client.android.test.integration.R;
+import microsoft.aspnet.signalr.client.test.integration.ApplicationContext;
+import microsoft.aspnet.signalr.client.test.integration.framework.TestCase;
+import microsoft.aspnet.signalr.client.test.integration.framework.TestExecutionCallback;
+import microsoft.aspnet.signalr.client.test.integration.framework.TestGroup;
+import microsoft.aspnet.signalr.client.test.integration.framework.TestResult;
+import microsoft.aspnet.signalr.client.test.integration.tests.MiscTests;
 
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -71,7 +73,8 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		ApplicationContext.setContext(this);
+		AndroidTestPlatformContext testPlatformContext = new AndroidTestPlatformContext(this);
+		ApplicationContext.setTestPlatformContext(testPlatformContext);
 		
 		setContentView(R.layout.activity_main);
 

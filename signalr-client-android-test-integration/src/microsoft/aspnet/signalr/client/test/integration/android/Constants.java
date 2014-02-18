@@ -17,26 +17,10 @@ Apache 2.0 License
  
 See the Apache Version 2.0 License for specific language governing permissions and limitations under the License.
  */
-package microsoft.aspnet.signalr.client.android.test.integration;
+package microsoft.aspnet.signalr.client.test.integration.android;
 
-import android.os.Bundle;
-import android.preference.PreferenceActivity;
-
-/**
- * A {@link PreferenceActivity} that presents a set of application settings. 
- */
-public class SignalRPreferenceActivity extends PreferenceActivity {
-	@SuppressWarnings("deprecation")
-	@Override
-	protected void onPostCreate(Bundle savedInstanceState) {
-		super.onPostCreate(savedInstanceState);
-
-		addPreferencesFromResource(R.xml.pref_general);
-	}
-
-	/** {@inheritDoc} */
-	@Override
-	public boolean onIsMultiPane() {
-		return false;
-	}
+public class Constants {
+	public static final String PREFERENCE_SIGNALR_URL = "pref_signalr_url";
+	
+	public static final String PREFERENCE_LOG_POST_URL = "pref_log_post_url";
 }

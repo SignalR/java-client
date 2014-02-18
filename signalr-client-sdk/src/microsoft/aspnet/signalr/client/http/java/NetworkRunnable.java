@@ -51,29 +51,27 @@ class NetworkRunnable implements Runnable {
     public void run() {
         try {
             int responseCode = -1;
-            synchronized (mCloseLock) {
-                if (!mFuture.isCancelled()) {
-                    if (mRequest == null) {
-                        mFuture.triggerError(new IllegalArgumentException("request"));
-                        return;
-                    }
+            if (!mFuture.isCancelled()) {
+                if (mRequest == null) {
+                    mFuture.triggerError(new IllegalArgumentException("request"));
+                    return;
+                }
 
-                    mLogger.log("Execute the HTTP Request", LogLevel.Verbose);
-                    mRequest.log(mLogger);
-                    mConnection = createHttpURLConnection(mRequest);
+                mLogger.log("Execute the HTTP Request", LogLevel.Verbose);
+                mRequest.log(mLogger);
+                mConnection = createHttpURLConnection(mRequest);
 
-                    mLogger.log("Request executed", LogLevel.Verbose);
+                mLogger.log("Request executed", LogLevel.Verbose);
 
-                    responseCode = mConnection.getResponseCode();
+                responseCode = mConnection.getResponseCode();
 
-                    if (responseCode < 400) {
-                        mResponseStream = mConnection.getInputStream();
-                    } else {
-                        mResponseStream = mConnection.getErrorStream();
-                    }
+                if (responseCode < 400) {
+                    mResponseStream = mConnection.getInputStream();
+                } else {
+                    mResponseStream = mConnection.getErrorStream();
                 }
             }
-
+        
             if (mResponseStream != null && !mFuture.isCancelled()) {
                 mCallback.onResponse(new StreamResponse(mResponseStream, responseCode, mConnection.getHeaderFields()));
                 mFuture.setResult(null);
@@ -96,17 +94,15 @@ class NetworkRunnable implements Runnable {
      * Closes the stream and connection, if possible
      */
     void closeStreamAndConnection() {
-        synchronized (mCloseLock) {
-            if (mResponseStream != null) {
-                try {
-                    mResponseStream.close();
-                } catch (IOException e) {
-                }
+        if (mResponseStream != null) {
+            try {
+                mResponseStream.close();
+            } catch (IOException e) {
             }
+        }
 
-            if (mConnection != null) {
-                mConnection.disconnect();
-            }
+        if (mConnection != null) {
+            mConnection.disconnect();
         }
     }
 
@@ -120,9 +116,9 @@ class NetworkRunnable implements Runnable {
      */
     static HttpURLConnection createHttpURLConnection(Request request) throws IOException {
         URL url = new URL(request.getUrl());
-
+        
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
+        connection.setConnectTimeout(15 * 1000);
         connection.setRequestMethod(request.getVerb());
 
         Map<String, String> headers = request.getHeaders();

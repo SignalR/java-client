@@ -17,8 +17,27 @@ Apache 2.0 License
  
 See the Apache Version 2.0 License for specific language governing permissions and limitations under the License.
  */
-package microsoft.aspnet.signalr.client.android.test.integration.framework;
+package microsoft.aspnet.signalr.client.test.integration.android;
 
-public enum TestStatus {
-	NotRun, Running, Failed, Passed
+import microsoft.aspnet.signalr.client.android.test.integration.R;
+import android.os.Bundle;
+import android.preference.PreferenceActivity;
+
+/**
+ * A {@link PreferenceActivity} that presents a set of application settings. 
+ */
+public class SignalRPreferenceActivity extends PreferenceActivity {
+	@SuppressWarnings("deprecation")
+	@Override
+	protected void onPostCreate(Bundle savedInstanceState) {
+		super.onPostCreate(savedInstanceState);
+
+		addPreferencesFromResource(R.xml.pref_general);
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public boolean onIsMultiPane() {
+		return false;
+	}
 }

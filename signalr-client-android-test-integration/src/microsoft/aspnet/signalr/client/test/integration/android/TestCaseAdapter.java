@@ -17,10 +17,11 @@ Apache 2.0 License
  
 See the Apache Version 2.0 License for specific language governing permissions and limitations under the License.
  */
-package microsoft.aspnet.signalr.client.android.test.integration;
+package microsoft.aspnet.signalr.client.test.integration.android;
 
-import microsoft.aspnet.signalr.client.android.test.integration.framework.TestCase;
-import microsoft.aspnet.signalr.client.android.test.integration.framework.TestStatus;
+import microsoft.aspnet.signalr.client.android.test.integration.R;
+import microsoft.aspnet.signalr.client.test.integration.framework.TestCase;
+import microsoft.aspnet.signalr.client.test.integration.framework.TestStatus;
 
 import android.app.Activity;
 import android.content.Context;

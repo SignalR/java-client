@@ -504,8 +504,16 @@ public class Connection implements ConnectionBase {
             }
 
             log("Disconnecting", LogLevel.Information);
-            changeState(mState, ConnectionState.Disconnected);
-
+            ConnectionState oldState = mState;
+            mState = ConnectionState.Disconnected;
+            if (mOnStateChanged != null) {
+                try {
+                    mOnStateChanged.stateChanged(oldState, ConnectionState.Disconnected);
+                } catch (Throwable e) {
+                    onError(e, false);
+                }
+            }
+            
             if (mHeartbeatMonitor != null) {
                 log("Stopping Heartbeat monitor", LogLevel.Verbose);
                 mHeartbeatMonitor.stop();
@@ -704,7 +712,9 @@ public class Connection implements ConnectionBase {
      *            The received data
      */
     private void processReceivedData(String data) {
-        mHeartbeatMonitor.beat();
+        if (mHeartbeatMonitor != null) {
+            mHeartbeatMonitor.beat();
+        }
 
         MessageResult result = TransportHelper.processReceivedData(data, this);
 
