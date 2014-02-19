@@ -18,8 +18,6 @@ public class Program {
      * @param args
      */
     public static void main(String[] args) {
-        args = new String[] {"http://10.0.0.172:10001/"};
-        
         if (args.length != 1) {
             System.err.println("There must be one argument with the server url.");
             return;
@@ -27,7 +25,7 @@ public class Program {
         
         String serverUrl = args[0];
         JavaTestPlatformContext testPlatformContext = new JavaTestPlatformContext(serverUrl);
-        testPlatformContext.setLoggingEnabled(true);
+        testPlatformContext.setLoggingEnabled(false);
         ApplicationContext.setTestPlatformContext(testPlatformContext);
         
         List<TestGroup> testGroups = new ArrayList<TestGroup>();
