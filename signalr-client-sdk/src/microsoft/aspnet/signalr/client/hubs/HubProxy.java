@@ -2,10 +2,11 @@ package microsoft.aspnet.signalr.client.hubs;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import microsoft.aspnet.signalr.client.Action;
 import microsoft.aspnet.signalr.client.ErrorCallback;
@@ -24,9 +25,9 @@ public class HubProxy {
 
     private HubConnection mConnection;
 
-    private Map<String, Subscription> mSubscriptions = new ConcurrentHashMap<String, Subscription>();
+    private Map<String, Subscription> mSubscriptions = Collections.synchronizedMap(new HashMap<String, Subscription>());
 
-    private Map<String, JsonElement> mState = new ConcurrentHashMap<String, JsonElement>();
+    private Map<String, JsonElement> mState = Collections.synchronizedMap(new HashMap<String, JsonElement>());
 
     private Logger mLogger;
 

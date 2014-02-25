@@ -55,13 +55,13 @@ public class ApplicationContext {
     public static ClientTransport createTransport(TransportType transportType) {
         switch (transportType) {
         case Auto:
-            return new AutomaticTransport();
+            return new AutomaticTransport(mTestPlatformContext.getLogger());
 
         case LongPolling:
-            return new LongPollingTransport(new NullLogger());
+            return new LongPollingTransport(mTestPlatformContext.getLogger());
             
         case ServerSentEvents:
-            return new ServerSentEventsTransport(new NullLogger());
+            return new ServerSentEventsTransport(mTestPlatformContext.getLogger());
         default:
             return null;
         }

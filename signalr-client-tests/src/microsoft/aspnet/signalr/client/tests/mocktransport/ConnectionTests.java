@@ -62,10 +62,6 @@ public class ConnectionTests {
 
         transport.startOperation.future.setResult(null);
 
-        assertEquals(ConnectionState.Connecting, connection.getState());
-
-        transport.startOperation.callback.onData("{\"S\":1}");
-
         assertEquals(ConnectionState.Connected, connection.getState());
 
         assertTrue(startFuture.isDone());
@@ -94,6 +90,10 @@ public class ConnectionTests {
                 result.listResult.add(json);
             }
         });
+
+        JsonObject initMessage = new JsonObject();
+        initMessage.addProperty("S", "1");
+        transport.startOperation.callback.onData(initMessage.toString());
 
         JsonObject message1 = new JsonObject();
         message1.addProperty("I", "Hello World");

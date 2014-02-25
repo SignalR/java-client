@@ -28,6 +28,7 @@ import java.util.concurrent.Semaphore;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 
+import microsoft.aspnet.signalr.client.Action;
 import microsoft.aspnet.signalr.client.ConnectionState;
 import microsoft.aspnet.signalr.client.ErrorCallback;
 import microsoft.aspnet.signalr.client.MessageReceivedHandler;
@@ -46,7 +47,9 @@ import microsoft.aspnet.signalr.client.transport.ClientTransport;
 
 public class MiscTests extends TestGroup {
     
-	private TestCase createBasicConnectionFlowTest(String name, final TransportType transportType) {
+	private static final String INTEGRATION_TESTS_HUB_NAME = "integrationTestsHub";
+
+    private TestCase createBasicConnectionFlowTest(String name, final TransportType transportType) {
 		TestCase test = new TestCase() {
 		    
 		    private InteralTestData testData;
@@ -76,7 +79,7 @@ public class MiscTests extends TestGroup {
                     });
 
 				    final Semaphore semaphore = new Semaphore(0);
-				    HubProxy proxy = connection.createHubProxy("integrationTestsHub");
+				    HubProxy proxy = connection.createHubProxy(INTEGRATION_TESTS_HUB_NAME);
                     connection.closed(new Runnable() {
                         
                         @Override
@@ -187,7 +190,7 @@ public class MiscTests extends TestGroup {
                         }
                     });
                     
-                    HubProxy proxy = connection.createHubProxy("integrationTestsHub");
+                    HubProxy proxy = connection.createHubProxy(INTEGRATION_TESTS_HUB_NAME);
                     
                     proxy.subscribe(new Object() {
                         @SuppressWarnings("unused")
@@ -257,7 +260,7 @@ public class MiscTests extends TestGroup {
                     
                     testData = new InteralTestData();
                     
-                    HubProxy proxy = connection.createHubProxy("integrationTestsHub");
+                    HubProxy proxy = connection.createHubProxy(INTEGRATION_TESTS_HUB_NAME);
                     
                     proxy.subscribe(new Object() {
                         @SuppressWarnings("unused")
@@ -479,6 +482,72 @@ public class MiscTests extends TestGroup {
 
         return test;
     }
+	
+
+    private TestCase createPendingCallbacksAbortedTest(String name, final TransportType transportType) {
+        TestCase test = new TestCase() {
+            
+            InteralTestData testData;
+            
+            @Override
+            public TestResult executeTest() {
+                try {
+                    HubConnection connection = ApplicationContext.createHubConnection();
+                    ClientTransport transport = ApplicationContext.createTransport(transportType);
+                    
+                    testData = new InteralTestData();
+                    
+                    HubProxy proxy = connection.createHubProxy(INTEGRATION_TESTS_HUB_NAME);
+                    connection.start(transport).get();
+                    
+                    proxy.invoke(String.class, "waitAndReturn", 20)
+                        .done(new Action<String>() {
+                            
+                            @Override
+                            public void run(String obj) throws Exception {
+                                testData.receivedData.add(obj);
+                            }
+                        })
+                        .onError(new ErrorCallback() {
+                            
+                            @Override
+                            public void onError(Throwable error) {
+                                testData.errors.add(error);
+                            }
+                        });
+                    
+                    connection.stop();
+                    
+                    ApplicationContext.sleep(15);
+                    
+                    TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+                    
+                    //validations
+                    
+                    if (System.getProperty("java.runtime.name").toLowerCase().contains("android")) {
+                        // outside android, java lib might not break the connection soon enough to avoid receiving the message callback
+                        if (testData.receivedData.size() != 0) {
+                            return createResultFromException(new Exception("No result should have been received"));
+                        }
+                    }
+                    
+                    if (testData.errors.size() == 0) {
+                        return createResultFromException(new Exception("Exception should have been thrown when connection was closed"));
+                    }
+                    
+                    return result;
+                } catch (Exception e) {
+                    return createResultFromException(e);
+                }
+            }
+        };
+        
+        test.setName(name);
+
+        return test;
+    }
 
 	public MiscTests() {
 		super("SignalR tests");
@@ -506,5 +575,11 @@ public class MiscTests extends TestGroup {
 		for (TransportType transportType : TransportType.values()) {
             this.addTest(createConnectToUnavailableServerTest("Connecto to unavailable server - " + transportType.name(), transportType));
         }
+		
+		for (TransportType transportType : TransportType.values()) {
+		    this.addTest(createPendingCallbacksAbortedTest("Pending callbacks aborted - " + transportType.name(), transportType));
+        }
+	
 	}
+
 }

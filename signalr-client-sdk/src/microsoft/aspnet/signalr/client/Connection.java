@@ -695,6 +695,14 @@ public class Connection implements ConnectionBase {
                                 log("Reconnected", LogLevel.Information);
                                 onReconnected();
 
+                            } else if (changeState(ConnectionState.Connecting, ConnectionState.Connected)) {
+
+                                log("Starting Heartbeat monitor", LogLevel.Verbose);
+                                mHeartbeatMonitor.start(mKeepAliveData, that);
+                                
+                                log("Connected", LogLevel.Information);
+                                onConnected();
+                                mConnectionFuture.setResult(null);
                             }
                         }
                     }
@@ -721,19 +729,6 @@ public class Connection implements ConnectionBase {
         if (result.disconnect()) {
             disconnect();
             return;
-        }
-
-        if (result.initialize()) {
-            log("Current state: " + mState, LogLevel.Verbose);
-            if (changeState(ConnectionState.Connecting, ConnectionState.Connected)) {
-
-                log("Starting Heartbeat monitor", LogLevel.Verbose);
-                mHeartbeatMonitor.start(mKeepAliveData, this);
-                
-                log("Connected", LogLevel.Information);
-                onConnected();
-                mConnectionFuture.setResult(null);
-            }
         }
 
         if (result.reconnect()) {
@@ -813,7 +808,7 @@ public class Connection implements ConnectionBase {
 
     @Override
     public void onReceived(JsonElement message) {
-        if (mOnReceived != null) {
+        if (mOnReceived != null && getState() == ConnectionState.Connected) {
             log("Invoking messageReceived with: " + message, LogLevel.Verbose);
             try {
                 mOnReceived.onMessageReceived(message);

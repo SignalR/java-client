@@ -18,7 +18,7 @@ public class TransportHelper {
     public static MessageResult processReceivedData(String data, ConnectionBase connection) {
         Logger logger = connection.getLogger();
         MessageResult result = new MessageResult();
-
+        
         if (data == null) {
             return result;
         }

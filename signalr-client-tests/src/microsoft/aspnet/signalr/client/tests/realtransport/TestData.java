@@ -10,7 +10,7 @@ import microsoft.aspnet.signalr.client.tests.util.ConsoleLogger;
 
 public class TestData {
 
-    public static final String SERVER_ADDRESS = "10.0.0.172:10001";
+    public static final String SERVER_ADDRESS = "10.0.0.133/signalrtestserver";
     public static final String SERVER_URL = "http://" + SERVER_ADDRESS + "/testendpoint";
     public static final String HUB_URL = "http://" + SERVER_ADDRESS + "/signalr";
     public static final String CONNECTION_QUERYSTRING = "myVal=1";

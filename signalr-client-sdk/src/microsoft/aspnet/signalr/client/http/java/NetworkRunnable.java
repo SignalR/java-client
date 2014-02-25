@@ -94,15 +94,16 @@ class NetworkRunnable implements Runnable {
      * Closes the stream and connection, if possible
      */
     void closeStreamAndConnection() {
-        if (mResponseStream != null) {
-            try {
-                mResponseStream.close();
-            } catch (IOException e) {
-            }
-        }
 
-        if (mConnection != null) {
-            mConnection.disconnect();
+        try {
+            if (mConnection != null) {
+                mConnection.disconnect();
+            }
+            
+            if (mResponseStream != null) {
+                mResponseStream.close();
+            }
+        } catch (IOException e) {
         }
     }
 
