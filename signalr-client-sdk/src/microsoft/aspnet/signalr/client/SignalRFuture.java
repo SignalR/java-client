@@ -23,6 +23,7 @@ public class SignalRFuture<V> implements Future<V> {
     private List<ErrorCallback> mErrorCallback = new ArrayList<ErrorCallback>();
     private Queue<Throwable> mErrorQueue = new ConcurrentLinkedQueue<Throwable>();
     private Object mErrorLock = new Object();
+    private Throwable mLastError = null;
 
     private Semaphore mResultSemaphore = new Semaphore(0);
 
@@ -46,6 +47,7 @@ public class SignalRFuture<V> implements Future<V> {
                 onCancelled.run();
             }
         }
+        mResultSemaphore.release();
     }
 
     /**
@@ -100,7 +102,13 @@ public class SignalRFuture<V> implements Future<V> {
     @Override
     public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         if (mResultSemaphore.tryAcquire(timeout, unit)) {
-            return mResult;
+            if (errorWasTriggered()) {
+                throw new ExecutionException(mLastError);
+            } else if (isCancelled()) {
+                throw new InterruptedException("Operation was cancelled");
+            } else {
+                return mResult;
+            }
         } else {
             throw new TimeoutException();
         }
@@ -145,7 +153,6 @@ public class SignalRFuture<V> implements Future<V> {
     public SignalRFuture<V> onError(ErrorCallback errorCallback) {
         synchronized (mErrorLock) {
             mErrorCallback.add(errorCallback);
-
             while (!mErrorQueue.isEmpty()) {
                 // Only the first error handler will get the queued errors
                 if (errorCallback != null) {
@@ -165,6 +172,8 @@ public class SignalRFuture<V> implements Future<V> {
      */
     public void triggerError(Throwable error) {
         synchronized (mErrorLock) {
+            mLastError = error;
+            mResultSemaphore.release();
             if (mErrorCallback.size() > 0) {
                 for (ErrorCallback handler : mErrorCallback) {
                     handler.onError(error);
@@ -173,6 +182,15 @@ public class SignalRFuture<V> implements Future<V> {
                 mErrorQueue.add(error);
             }
         }
+    }
+    
+    /**
+     * Indicates if an error was triggered
+     * 
+     * @return True if an error was triggered
+     */
+    public boolean errorWasTriggered() {
+        return mLastError != null;
     }
 
 }

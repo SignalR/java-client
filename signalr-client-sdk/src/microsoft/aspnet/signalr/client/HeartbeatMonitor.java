@@ -90,11 +90,13 @@ public class HeartbeatMonitor {
      * Stops the heartbeat monitor
      */
     public void stop() {
-        synchronized (mSync) {
-            mStopped = true;
-            if (mExecutor != null) {
-                mExecutor.shutdown();
-                mExecutor = null;
+        if (!mStopped) {
+            synchronized (mSync) {
+                mStopped = true;
+                if (mExecutor != null) {
+                    mExecutor.shutdown();
+                    mExecutor = null;
+                }
             }
         }
     }

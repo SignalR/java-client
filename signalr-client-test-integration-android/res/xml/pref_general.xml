@@ -1,0 +1,18 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <EditTextPreference
+        android:key="pref_signalr_url"
+        android:title="@string/pref_signalr_title_url"
+        android:maxLines="1"
+        android:singleLine="true" 
+        android:defaultValue="@string/pref_signalr_url"/>
+
+    <EditTextPreference 
+        android:key="pref_log_post_url" 
+        android:title="@string/pref_title_log_post_url"
+        android:maxLines="1"
+        android:singleLine="true"
+        android:defaultValue="@string/pref_log_post_url"/>
+    
+    
+</PreferenceScreen>

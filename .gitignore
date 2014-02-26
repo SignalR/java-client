@@ -3,3 +3,16 @@ signalr-client-sdk/bin/*
 signalr-client-tests/bin/*
 signalr-client-sdk/lib/*.jar
 signalr-client-sdk/target/*
+signalr-client-tests/SignalRTestServer/*.suo
+signalr-client-tests/SignalRTestServer/bin/*
+signalr-client-tests/SignalRTestServer/obj/*
+signalr-client-tests/SignalRTestServer/packages
+signalr-client-tests/SignalRTestServer/*.user
+signalr-client-test-integration-android/bin/*
+signalr-client-test-integration-android/gen/*
+signalr-client-test-integration-java/bin/*
+signalr-client-test-integration-base/bin/*
+
+signalr-client-android-test-integration/libs/gson-2.2.2.jar
+
+

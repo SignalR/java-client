@@ -1,8 +1,9 @@
 package microsoft.aspnet.signalr.client.hubs;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -20,8 +21,8 @@ import microsoft.aspnet.signalr.client.Connection;
  */
 public class HubConnection extends Connection {
 
-    private Map<String, Action<HubResult>> mCallbacks = new ConcurrentHashMap<String, Action<HubResult>>();
-    private Map<String, HubProxy> mHubs = new ConcurrentHashMap<String, HubProxy>();
+    private Map<String, Action<HubResult>> mCallbacks = Collections.synchronizedMap(new HashMap<String, Action<HubResult>>());
+    private Map<String, HubProxy> mHubs = Collections.synchronizedMap(new HashMap<String, HubProxy>());
     private Integer mCallbackId = 0;
 
     /**
@@ -67,49 +68,51 @@ public class HubConnection extends Connection {
         super.onReceived(message);
 
         log("Processing message", LogLevel.Information);
-        if (message.isJsonObject() && message.getAsJsonObject().has("I")) {
-            log("Getting HubResult from message", LogLevel.Verbose);
-            HubResult result = mGson.fromJson(message, HubResult.class);
-
-            String id = result.getId().toLowerCase(Locale.getDefault());
-            log("Result Id: " + id, LogLevel.Verbose);
-            log("Result Data: " + result.getResult(), LogLevel.Verbose);
-
-            if (mCallbacks.containsKey(id)) {
-                log("Get and remove callback with id: " + id, LogLevel.Verbose);
-                Action<HubResult> callback = mCallbacks.remove(id);
-
-                try {
-                    log("Execute callback for message", LogLevel.Verbose);
-                    callback.run(result);
-                } catch (Exception e) {
-                    onError(e, false);
-                }
-            }
-        } else {
-            HubInvocation invocation = mGson.fromJson(message, HubInvocation.class);
-            log("Getting HubInvocation from message", LogLevel.Verbose);
-
-            String hubName = invocation.getHub().toLowerCase(Locale.getDefault());
-            log("Message for: " + hubName, LogLevel.Verbose);
-
-            if (mHubs.containsKey(hubName)) {
-                HubProxy hubProxy = mHubs.get(hubName);
-                if (invocation.getState() != null) {
-                    for (String key : invocation.getState().keySet()) {
-                        JsonElement value = invocation.getState().get(key);
-                        log("Setting state for hub: " + key + " -> " + value, LogLevel.Verbose);
-                        hubProxy.setState(key, value);
+        if (getState() == ConnectionState.Connected) {
+            if (message.isJsonObject() && message.getAsJsonObject().has("I")) {
+                log("Getting HubResult from message", LogLevel.Verbose);
+                HubResult result = mGson.fromJson(message, HubResult.class);
+    
+                String id = result.getId().toLowerCase(Locale.getDefault());
+                log("Result Id: " + id, LogLevel.Verbose);
+                log("Result Data: " + result.getResult(), LogLevel.Verbose);
+    
+                if (mCallbacks.containsKey(id)) {
+                    log("Get and remove callback with id: " + id, LogLevel.Verbose);
+                    Action<HubResult> callback = mCallbacks.remove(id);
+    
+                    try {
+                        log("Execute callback for message", LogLevel.Verbose);
+                        callback.run(result);
+                    } catch (Exception e) {
+                        onError(e, false);
                     }
                 }
-
-                String eventName = invocation.getMethod().toLowerCase(Locale.getDefault());
-                log("Invoking event: " + eventName + " with arguments " + arrayToString(invocation.getArgs()), LogLevel.Verbose);
-
-                try {
-                    hubProxy.invokeEvent(eventName, invocation.getArgs());
-                } catch (Exception e) {
-                    onError(e, false);
+            } else {
+                HubInvocation invocation = mGson.fromJson(message, HubInvocation.class);
+                log("Getting HubInvocation from message", LogLevel.Verbose);
+    
+                String hubName = invocation.getHub().toLowerCase(Locale.getDefault());
+                log("Message for: " + hubName, LogLevel.Verbose);
+    
+                if (mHubs.containsKey(hubName)) {
+                    HubProxy hubProxy = mHubs.get(hubName);
+                    if (invocation.getState() != null) {
+                        for (String key : invocation.getState().keySet()) {
+                            JsonElement value = invocation.getState().get(key);
+                            log("Setting state for hub: " + key + " -> " + value, LogLevel.Verbose);
+                            hubProxy.setState(key, value);
+                        }
+                    }
+    
+                    String eventName = invocation.getMethod().toLowerCase(Locale.getDefault());
+                    log("Invoking event: " + eventName + " with arguments " + arrayToString(invocation.getArgs()), LogLevel.Verbose);
+    
+                    try {
+                        hubProxy.invokeEvent(eventName, invocation.getArgs());
+                    } catch (Exception e) {
+                        onError(e, false);
+                    }
                 }
             }
         }

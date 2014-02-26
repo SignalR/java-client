@@ -346,7 +346,9 @@ public class Connection implements ConnectionBase {
                     public void run(NegotiationResponse negotiationResponse) throws Exception {
                         log("Negotiation completed", LogLevel.Information);
                         if (!verifyProtocolVersion(negotiationResponse.getProtocolVersion())) {
-                            onError(new InvalidProtocolVersionException(negotiationResponse.getProtocolVersion()), true);
+                            Exception err = new InvalidProtocolVersionException(negotiationResponse.getProtocolVersion()); 
+                            onError(err, true);
+                            mConnectionFuture.triggerError(err);
                             return;
                         }
 
@@ -364,6 +366,15 @@ public class Connection implements ConnectionBase {
                         startTransport(keepAliveData, false);
                     }
                 });
+                
+                negotiationFuture.onError(new ErrorCallback() {
+                    
+                    @Override
+                    public void onError(Throwable error) {
+                        mConnectionFuture.triggerError(error);
+                    }
+                });
+                
             } catch (Exception e) {
                 onError(e, true);
             }
@@ -493,8 +504,16 @@ public class Connection implements ConnectionBase {
             }
 
             log("Disconnecting", LogLevel.Information);
+            ConnectionState oldState = mState;
             mState = ConnectionState.Disconnected;
-
+            if (mOnStateChanged != null) {
+                try {
+                    mOnStateChanged.stateChanged(oldState, ConnectionState.Disconnected);
+                } catch (Throwable e) {
+                    onError(e, false);
+                }
+            }
+            
             if (mHeartbeatMonitor != null) {
                 log("Stopping Heartbeat monitor", LogLevel.Verbose);
                 mHeartbeatMonitor.stop();
@@ -650,6 +669,14 @@ public class Connection implements ConnectionBase {
             handleFutureError(future, true);
 
             mConnectionFuture.setFuture(future);
+            future.onError(new ErrorCallback() {
+                
+                @Override
+                public void onError(Throwable error) {
+                    mConnectionFuture.triggerError(error);
+                }
+            });
+            
             mKeepAliveData = keepAliveData;
 
             try {
@@ -662,14 +689,20 @@ public class Connection implements ConnectionBase {
                             log("Current state: " + mState, LogLevel.Verbose);
                             if (changeState(ConnectionState.Reconnecting, ConnectionState.Connected)) {
 
-                                if (mTransport.supportKeepAlive()) {
-                                    log("Starting Heartbeat monitor", LogLevel.Verbose);
-                                    mHeartbeatMonitor.start(mKeepAliveData, that);
-                                }
-
+                                log("Starting Heartbeat monitor", LogLevel.Verbose);
+                                mHeartbeatMonitor.start(mKeepAliveData, that);
+                                
                                 log("Reconnected", LogLevel.Information);
                                 onReconnected();
 
+                            } else if (changeState(ConnectionState.Connecting, ConnectionState.Connected)) {
+
+                                log("Starting Heartbeat monitor", LogLevel.Verbose);
+                                mHeartbeatMonitor.start(mKeepAliveData, that);
+                                
+                                log("Connected", LogLevel.Information);
+                                onConnected();
+                                mConnectionFuture.setResult(null);
                             }
                         }
                     }
@@ -687,28 +720,15 @@ public class Connection implements ConnectionBase {
      *            The received data
      */
     private void processReceivedData(String data) {
-        mHeartbeatMonitor.beat();
+        if (mHeartbeatMonitor != null) {
+            mHeartbeatMonitor.beat();
+        }
 
         MessageResult result = TransportHelper.processReceivedData(data, this);
 
         if (result.disconnect()) {
             disconnect();
             return;
-        }
-
-        if (result.initialize()) {
-            log("Current state: " + mState, LogLevel.Verbose);
-            if (changeState(ConnectionState.Connecting, ConnectionState.Connected)) {
-
-                if (mTransport.supportKeepAlive()) {
-                    log("Starting Heartbeat monitor", LogLevel.Verbose);
-                    mHeartbeatMonitor.start(mKeepAliveData, this);
-                }
-
-                log("Connected", LogLevel.Information);
-                onConnected();
-                mConnectionFuture.setResult(null);
-            }
         }
 
         if (result.reconnect()) {
@@ -788,7 +808,7 @@ public class Connection implements ConnectionBase {
 
     @Override
     public void onReceived(JsonElement message) {
-        if (mOnReceived != null) {
+        if (mOnReceived != null && getState() == ConnectionState.Connected) {
             log("Invoking messageReceived with: " + message, LogLevel.Verbose);
             try {
                 mOnReceived.onMessageReceived(message);
