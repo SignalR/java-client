@@ -17,7 +17,6 @@ public class Program {
      * @param args
      */
     public static void main(String[] args) {
-        args = new String[] {"http://10.0.0.133/SignalRTestServer/"};
         
         if (args.length != 1) {
             System.err.println("There must be one argument with the server url.");

@@ -13,6 +13,7 @@ signalr-client-test-integration-android/gen/*
 signalr-client-test-integration-java/bin/*
 signalr-client-test-integration-base/bin/*
 
+signalr-client-test-integration-base/bin/microsoft/aspnet/signalr/client/test/integration/tests/*
 signalr-client-android-test-integration/libs/gson-2.2.2.jar
 
-
+signalr-client-test-integration-base/bin/microsoft/aspnet/signalr/client/test/integration/tests/*

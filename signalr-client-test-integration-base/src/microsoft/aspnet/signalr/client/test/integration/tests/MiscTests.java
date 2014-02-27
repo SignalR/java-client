@@ -30,14 +30,17 @@ import com.google.gson.JsonPrimitive;
 
 import microsoft.aspnet.signalr.client.Action;
 import microsoft.aspnet.signalr.client.ConnectionState;
+import microsoft.aspnet.signalr.client.Credentials;
 import microsoft.aspnet.signalr.client.ErrorCallback;
 import microsoft.aspnet.signalr.client.MessageReceivedHandler;
 import microsoft.aspnet.signalr.client.StateChangedCallback;
+import microsoft.aspnet.signalr.client.http.Request;
 import microsoft.aspnet.signalr.client.hubs.HubConnection;
 import microsoft.aspnet.signalr.client.hubs.HubException;
 import microsoft.aspnet.signalr.client.hubs.HubProxy;
 import microsoft.aspnet.signalr.client.test.integration.ApplicationContext;
 import microsoft.aspnet.signalr.client.test.integration.TransportType;
+import microsoft.aspnet.signalr.client.test.integration.framework.ExpectedValueException;
 import microsoft.aspnet.signalr.client.test.integration.framework.TestCase;
 import microsoft.aspnet.signalr.client.test.integration.framework.TestGroup;
 import microsoft.aspnet.signalr.client.test.integration.framework.TestResult;
@@ -110,7 +113,9 @@ public class MiscTests extends TestGroup {
 				    connection.stop();
 
 				    semaphore.acquire();
-				    
+
+                    ApplicationContext.sleep();
+
 				    TestResult result = new TestResult();
 				    result.setStatus(TestStatus.Passed);
 				    result.setTestCase(this);
@@ -548,6 +553,53 @@ public class MiscTests extends TestGroup {
 
         return test;
     }
+    
+    private TestCase createCheckHeaderTest(String name, final TransportType transportType) {
+        TestCase test = new TestCase() {
+            @Override
+            public TestResult executeTest() {
+                try {
+                    HubConnection connection = ApplicationContext.createHubConnection();
+                    ClientTransport transport = ApplicationContext.createTransport(transportType);
+                    
+                    final String headerName = UUID.randomUUID().toString();
+                    final String headerValue = UUID.randomUUID().toString();
+                    connection.setCredentials(new Credentials() {
+                        
+                        @Override
+                        public void prepareRequest(Request request) {
+                            request.addHeader(headerName, headerValue);
+                        }
+                    });
+                    
+                    HubProxy proxy = connection.createHubProxy(INTEGRATION_TESTS_HUB_NAME);
+                    connection.start(transport).get();
+                    
+                    String retValue = proxy.invoke(String.class, "HeaderData", headerName).get();
+                    
+                    connection.stop();
+                    
+                    TestResult result = new TestResult();
+                    result.setStatus(TestStatus.Passed);
+                    result.setTestCase(this);
+                    
+                    //validations
+                    
+                    if (!headerValue.equals(retValue)) {
+                        return createResultFromException(new ExpectedValueException(headerName, retValue));
+                    }
+                    
+                    return result;
+                } catch (Exception e) {
+                    return createResultFromException(e);
+                }
+            }
+        };
+        
+        test.setName(name);
+
+        return test;
+    }
 
 	public MiscTests() {
 		super("SignalR tests");
@@ -579,7 +631,11 @@ public class MiscTests extends TestGroup {
 		for (TransportType transportType : TransportType.values()) {
 		    this.addTest(createPendingCallbacksAbortedTest("Pending callbacks aborted - " + transportType.name(), transportType));
         }
+		
+		for (TransportType transportType : TransportType.values()) {
+            this.addTest(createCheckHeaderTest("Check headers - " + transportType.name(), transportType));
+        }
 	
-	}
+	}   
 
 }
