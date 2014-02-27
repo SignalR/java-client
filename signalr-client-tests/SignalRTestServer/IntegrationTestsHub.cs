@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Web;
 using Microsoft.AspNet.SignalR;
+using System.Threading;
 namespace SignalRTestServer
 {
     public class IntegrationTestsHub : Hub
@@ -33,6 +34,19 @@ namespace SignalRTestServer
         public void SendMessageToGroup(String groupName, String message)
         {
             this.Clients.Group(groupName).echo(message);
+        }
+
+        public String WaitAndReturn(int seconds)
+        {
+            Thread.Sleep(seconds * 1000);
+
+            return "Done!";
+        }
+
+
+        public string HeaderData(String headerName)
+        {
+            return Context.Headers[headerName];
         }
     }
 }
