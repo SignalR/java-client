@@ -60,7 +60,7 @@ public class AutomaticTransport extends HttpClientTransport {
     @Override
     public String getName() {
         if (mRealTransport == null) {
-            return null;
+            return "AutomaticTransport";
         }
 
         return mRealTransport.getName();
