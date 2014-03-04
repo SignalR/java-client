@@ -2,7 +2,6 @@ package microsoft.aspnet.signalr.client.test.integration;
 
 import java.util.concurrent.Future;
 
-import microsoft.aspnet.signalr.client.NullLogger;
 import microsoft.aspnet.signalr.client.hubs.HubConnection;
 import microsoft.aspnet.signalr.client.test.integration.framework.TestCase;
 import microsoft.aspnet.signalr.client.test.integration.framework.TestExecutionCallback;
