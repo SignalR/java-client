@@ -6,6 +6,7 @@ See License.txt in the project root for license information.
 
 package microsoft.aspnet.signalr.client.test.integration.tests;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -588,6 +589,9 @@ public class MiscTests extends TestGroup {
         return test;
     }
 
+
+	
+	
 	public MiscTests() {
 		super("SignalR tests");
 
