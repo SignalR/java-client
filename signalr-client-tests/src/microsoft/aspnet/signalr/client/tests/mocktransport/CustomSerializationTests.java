@@ -122,4 +122,13 @@ public class CustomSerializationTests {
         assertEquals(seconds, calendar.get(Calendar.SECOND));
         assertEquals(milliseconds, calendar.get(Calendar.MILLISECOND));
     }
+    
+    @Test
+    public void testTimeParse() throws Exception {
+
+        assertNotNull(DateSerializer.deserialize("2014-03-29T00:00:00"));
+        assertNotNull(DateSerializer.deserialize("2014-03-29T00:00:00Z"));
+        assertNotNull(DateSerializer.deserialize("2014-03-29T00:00:00+00:00"));
+        assertNotNull(DateSerializer.deserialize("2014-03-29T00:00:00.Z"));
+    }
 }
