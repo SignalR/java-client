@@ -319,6 +319,15 @@ public class HubConnectionTests {
     }
 
     @Test
+    public void setHubConnectionHeaders(){
+        HubConnection connection = new HubConnection(SERVER_URL, "", true, new NullLogger());
+        connection.getHeaders().put("key", "value");
+
+        assertEquals(1, connection.getHeaders().values().size());
+        assertEquals("value", connection.getHeaders().get("key"));
+    }
+
+    @Test
     public void testMultipleSubscriptionForEvent() throws Exception {
 
         MockClientTransport transport = new MockClientTransport();
