@@ -53,9 +53,38 @@ public class WebsocketTransport extends HttpClientTransport {
     }
 
     @Override
-    public SignalRFuture<Void> start(ConnectionBase connection, ConnectionType connectionType, DataResultCallback callback) {
+    public SignalRFuture<Void> start(ConnectionBase connection, ConnectionType connectionType, final DataResultCallback callback) {
         final String connectionString = connectionType == ConnectionType.InitialConnection ? "connect" : "reconnect";
-        String url = connection.getUrl() + connectionString + TransportHelper.getReceiveQueryString(this, connection);
+
+        final String transport = getName();
+        final String connectionToken = connection.getConnectionToken();
+        final String messageId = connection.getMessageId() != null ? connection.getMessageId() : "";
+        final String groupsToken = connection.getGroupsToken() != null ? connection.getGroupsToken() : "";
+        final String connectionData = connection.getConnectionData() != null ? connection.getConnectionData() : "";
+
+
+        String url = null;
+        try {
+            url = connection.getUrl() + "signalr/" + connectionString + '?'
+                    + "connectionData=" + URLEncoder.encode(connectionData, "UTF-8")
+                    + "&connectionToken=" + URLEncoder.encode(connectionToken, "UTF-8")
+                    + "&groupsToken=" + URLEncoder.encode(groupsToken, "UTF-8")
+                    + "&messageId=" + URLEncoder.encode(messageId, "UTF-8")
+                    + "&transport=" + URLEncoder.encode(transport, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+//           String url = connection.getUrl() + "signalr/" + connectionString;
+//           String parameters = "connectionData=" + connectionData
+//            + "&connectionToken=" + connectionToken
+//            + "&groupsToken=" + groupsToken
+//            + "&messageId=" + messageId
+//            + "&transport=" + transport;
+
+//        String url = connection.getUrl() + connectionString + TransportHelper.getReceiveQueryString(this, connection);
+
+        log("websockettransport connecting to url:" + url, LogLevel.Verbose);
 
         mConnectionFuture = new UpdateableCancellableFuture<Void>(null);
 
@@ -71,7 +100,7 @@ public class WebsocketTransport extends HttpClientTransport {
         mWebSocketClient = new WebSocketClient(uri) {
             @Override
             public void onOpen(ServerHandshake serverHandshake) {
-                log("Opened", LogLevel.Verbose);
+                log("websockettransport Opened", LogLevel.Verbose);
                 mConnectionFuture.setResult(null);
                 mWebSocketClient.send("Hello from " + Build.MANUFACTURER + " " + Build.MODEL);
             }
@@ -79,20 +108,28 @@ public class WebsocketTransport extends HttpClientTransport {
             @Override
             public void onMessage(String s) {
                 final String message = s;
-                log("got message:" + s, LogLevel.Verbose);
+                callback.onData(s);
+                log("websockettransport got message:" + s, LogLevel.Verbose);
             }
 
             @Override
             public void onClose(int i, String s, boolean b) {
-                log("Closed " + s, LogLevel.Verbose);
+                log("websockettransport Closed " + s, LogLevel.Verbose);
             }
 
             @Override
             public void onError(Exception e) {
-                log("Error " + e.getMessage(), LogLevel.Verbose);
+                log("websockettransport Error " + e.getMessage(), LogLevel.Verbose);
             }
         };
         mWebSocketClient.connect();
+
+        connection.closed(new Runnable() {
+            @Override
+            public void run() {
+                mWebSocketClient.close();
+            }
+        });
 
 
         return mConnectionFuture;
