@@ -169,7 +169,9 @@ public class HubProxy {
      *            the event
      */
     public void removeSubscription(String eventName) {
-        mSubscriptions.remove(eventName);
+        if (eventName != null) {
+        	mSubscriptions.remove(eventName.toLowerCase(Locale.getDefault()));
+        }
     }
 
     /**
