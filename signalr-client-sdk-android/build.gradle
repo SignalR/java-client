@@ -40,4 +40,5 @@ android {
 
 dependencies {
     compile project(":signalr:signalr-client-sdk")
+    compile "org.java-websocket:Java-WebSocket:1.3.0"
 }
