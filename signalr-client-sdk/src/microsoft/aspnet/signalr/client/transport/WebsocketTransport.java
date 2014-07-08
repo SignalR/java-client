@@ -1,24 +1,17 @@
-package microsoft.aspnet.signalr.client.http.android;
+package microsoft.aspnet.signalr.client.transport;
 
-import android.net.Uri;
-import android.os.Build;
-import android.util.Log;
+import com.google.gson.Gson;
 
 import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.drafts.Draft_17;
 import org.java_websocket.exceptions.InvalidDataException;
 import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ServerHandshake;
 import org.java_websocket.util.Charsetfunctions;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
-import java.nio.ByteBuffer;
 
 import microsoft.aspnet.signalr.client.ConnectionBase;
 import microsoft.aspnet.signalr.client.LogLevel;
@@ -26,9 +19,6 @@ import microsoft.aspnet.signalr.client.Logger;
 import microsoft.aspnet.signalr.client.SignalRFuture;
 import microsoft.aspnet.signalr.client.UpdateableCancellableFuture;
 import microsoft.aspnet.signalr.client.http.HttpConnection;
-import microsoft.aspnet.signalr.client.transport.ConnectionType;
-import microsoft.aspnet.signalr.client.transport.DataResultCallback;
-import microsoft.aspnet.signalr.client.transport.HttpClientTransport;
 
 /**
  *
@@ -38,6 +28,8 @@ import microsoft.aspnet.signalr.client.transport.HttpClientTransport;
  */
 public class WebsocketTransport extends HttpClientTransport {
 
+    private String mPrefix;
+    private static final Gson gson = new Gson();
     WebSocketClient mWebSocketClient;
     private UpdateableCancellableFuture<Void> mConnectionFuture;
 
@@ -48,8 +40,6 @@ public class WebsocketTransport extends HttpClientTransport {
     public WebsocketTransport(Logger logger, HttpConnection httpConnection) {
         super(logger, httpConnection);
     }
-
-    private String mPrefix;
 
     @Override
     public String getName() {
@@ -174,17 +164,11 @@ public class WebsocketTransport extends HttpClientTransport {
     }
 
     private boolean isJSONValid(String test){
-        try{
-            new JSONObject(test);
+        try {
+            gson.fromJson(test, Object.class);
+            return true;
+        } catch(com.google.gson.JsonSyntaxException ex) {
+            return false;
         }
-        catch(JSONException ex){
-            try{
-                new JSONArray(test);
-            }
-            catch(JSONException ex2){
-                return false;
-            }
-        }
-        return true;
     }
 }

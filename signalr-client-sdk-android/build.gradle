@@ -40,5 +40,4 @@ android {
 
 dependencies {
     compile project(":signalr:signalr-client-sdk")
-    compile project(":websockets")
 }
