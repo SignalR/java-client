@@ -49,6 +49,8 @@ public class WebsocketTransport extends HttpClientTransport {
         super(logger, httpConnection);
     }
 
+    private String mPrefix;
+
     @Override
     public String getName() {
         return "webSockets";
@@ -82,7 +84,7 @@ public class WebsocketTransport extends HttpClientTransport {
             e.printStackTrace();
         }
 
-        log("websockettransport connecting to url:" + url, LogLevel.Verbose);
+//        log("websockettransport connecting to url:" + url, LogLevel.Verbose);
 
         mConnectionFuture = new UpdateableCancellableFuture<Void>(null);
 
@@ -104,7 +106,6 @@ public class WebsocketTransport extends HttpClientTransport {
 
             @Override
             public void onMessage(String s) {
-                final String message = s;
                 callback.onData(s);
                 log("websockettransport got message:" + s, LogLevel.Verbose);
             }
@@ -122,16 +123,29 @@ public class WebsocketTransport extends HttpClientTransport {
 
             @Override
             public void onFragment(Framedata frame) {
-                ByteBuffer buffer = frame.getPayloadData();
                 try {
                     String decodedString = Charsetfunctions.stringUtf8(frame.getPayloadData());
-                    //this might lose the very first message of the frame, because it might
-                    //contain the beginning of an array for example and have a leading '['
-                    //this will make decodedString not a valid object
-                    //Its possible to make a callback to upper layers of this framework to handle this case.
-                    //I will not do it as of now.
-                    if(isJSONValid(decodedString)){
-                        onMessage(decodedString);
+
+                    if(decodedString.equals("]}")){
+                        return;
+                    }
+
+                    if(decodedString.endsWith(":[") || null == mPrefix){
+                        mPrefix = decodedString;
+                        return;
+                    }
+
+                    String simpleConcatenate = mPrefix + decodedString;
+
+                    if(isJSONValid(simpleConcatenate)){
+                        onMessage(simpleConcatenate);
+                    }else{
+                        String extendedConcatenate = simpleConcatenate + "]}";
+                        if (isJSONValid(extendedConcatenate)) {
+                            onMessage(extendedConcatenate);
+                        } else {
+                            log("invalid json received:" + decodedString, LogLevel.Critical);
+                        }
                     }
 //                    log("websockettransport framecontent:" + decodedString, LogLevel.Verbose);
                 } catch (InvalidDataException e) {
