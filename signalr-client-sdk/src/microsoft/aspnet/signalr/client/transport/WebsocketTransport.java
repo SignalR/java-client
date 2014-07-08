@@ -74,8 +74,6 @@ public class WebsocketTransport extends HttpClientTransport {
             e.printStackTrace();
         }
 
-//        log("websockettransport connecting to url:" + url, LogLevel.Verbose);
-
         mConnectionFuture = new UpdateableCancellableFuture<Void>(null);
 
         URI uri;
@@ -90,14 +88,12 @@ public class WebsocketTransport extends HttpClientTransport {
         mWebSocketClient = new WebSocketClient(uri) {
             @Override
             public void onOpen(ServerHandshake serverHandshake) {
-                log("websockettransport Opened", LogLevel.Verbose);
                 mConnectionFuture.setResult(null);
             }
 
             @Override
             public void onMessage(String s) {
                 callback.onData(s);
-                log("websockettransport got message:" + s, LogLevel.Verbose);
             }
 
             @Override
@@ -107,7 +103,6 @@ public class WebsocketTransport extends HttpClientTransport {
 
             @Override
             public void onError(Exception e) {
-                log("websockettransport Error " + e.getMessage(), LogLevel.Verbose);
                 mWebSocketClient.close();
             }
 
@@ -137,7 +132,6 @@ public class WebsocketTransport extends HttpClientTransport {
                             log("invalid json received:" + decodedString, LogLevel.Critical);
                         }
                     }
-//                    log("websockettransport framecontent:" + decodedString, LogLevel.Verbose);
                 } catch (InvalidDataException e) {
                     e.printStackTrace();
                 }
@@ -158,7 +152,6 @@ public class WebsocketTransport extends HttpClientTransport {
 
     @Override
     public SignalRFuture<Void> send(ConnectionBase connection, String data, DataResultCallback callback) {
-        log("about to send:" + data, LogLevel.Verbose);
         mWebSocketClient.send(data);
         return new UpdateableCancellableFuture<Void>(null);
     }
