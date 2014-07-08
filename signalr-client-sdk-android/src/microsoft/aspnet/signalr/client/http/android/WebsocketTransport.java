@@ -6,12 +6,19 @@ import android.util.Log;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_17;
+import org.java_websocket.exceptions.InvalidDataException;
+import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ServerHandshake;
+import org.java_websocket.util.Charsetfunctions;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 
 import microsoft.aspnet.signalr.client.ConnectionBase;
 import microsoft.aspnet.signalr.client.LogLevel;
@@ -112,6 +119,25 @@ public class WebsocketTransport extends HttpClientTransport {
                 log("websockettransport Error " + e.getMessage(), LogLevel.Verbose);
                 mWebSocketClient.close();
             }
+
+            @Override
+            public void onFragment(Framedata frame) {
+                ByteBuffer buffer = frame.getPayloadData();
+                try {
+                    String decodedString = Charsetfunctions.stringUtf8(frame.getPayloadData());
+                    //this might lose the very first message of the frame, because it might
+                    //contain the beginning of an array for example and have a leading '['
+                    //this will make decodedString not a valid object
+                    //Its possible to make a callback to upper layers of this framework to handle this case.
+                    //I will not do it as of now.
+                    if(isJSONValid(decodedString)){
+                        onMessage(decodedString);
+                    }
+//                    log("websockettransport framecontent:" + decodedString, LogLevel.Verbose);
+                } catch (InvalidDataException e) {
+                    e.printStackTrace();
+                }
+            }
         };
         mWebSocketClient.connect();
 
@@ -131,5 +157,20 @@ public class WebsocketTransport extends HttpClientTransport {
         log("about to send:" + data, LogLevel.Verbose);
         mWebSocketClient.send(data);
         return new UpdateableCancellableFuture<Void>(null);
+    }
+
+    private boolean isJSONValid(String test){
+        try{
+            new JSONObject(test);
+        }
+        catch(JSONException ex){
+            try{
+                new JSONArray(test);
+            }
+            catch(JSONException ex2){
+                return false;
+            }
+        }
+        return true;
     }
 }
