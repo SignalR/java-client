@@ -1,9 +1,11 @@
 package microsoft.aspnet.signalr.client.http.android;
 
+import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
 
 import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.drafts.Draft_17;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.io.UnsupportedEncodingException;
@@ -14,14 +16,12 @@ import java.net.URLEncoder;
 import microsoft.aspnet.signalr.client.ConnectionBase;
 import microsoft.aspnet.signalr.client.LogLevel;
 import microsoft.aspnet.signalr.client.Logger;
-import microsoft.aspnet.signalr.client.Platform;
 import microsoft.aspnet.signalr.client.SignalRFuture;
 import microsoft.aspnet.signalr.client.UpdateableCancellableFuture;
 import microsoft.aspnet.signalr.client.http.HttpConnection;
 import microsoft.aspnet.signalr.client.transport.ConnectionType;
 import microsoft.aspnet.signalr.client.transport.DataResultCallback;
 import microsoft.aspnet.signalr.client.transport.HttpClientTransport;
-import microsoft.aspnet.signalr.client.transport.TransportHelper;
 
 /**
  *
@@ -66,23 +66,14 @@ public class WebsocketTransport extends HttpClientTransport {
         String url = null;
         try {
             url = connection.getUrl() + "signalr/" + connectionString + '?'
-                    + "connectionData=" + URLEncoder.encode(connectionData, "UTF-8")
-                    + "&connectionToken=" + URLEncoder.encode(connectionToken, "UTF-8")
+                    + "connectionData=" + URLEncoder.encode(URLEncoder.encode(connectionData, "UTF-8"), "UTF-8")
+                    + "&connectionToken=" + URLEncoder.encode(URLEncoder.encode(connectionToken, "UTF-8"), "UTF-8")
                     + "&groupsToken=" + URLEncoder.encode(groupsToken, "UTF-8")
                     + "&messageId=" + URLEncoder.encode(messageId, "UTF-8")
                     + "&transport=" + URLEncoder.encode(transport, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-
-//           String url = connection.getUrl() + "signalr/" + connectionString;
-//           String parameters = "connectionData=" + connectionData
-//            + "&connectionToken=" + connectionToken
-//            + "&groupsToken=" + groupsToken
-//            + "&messageId=" + messageId
-//            + "&transport=" + transport;
-
-//        String url = connection.getUrl() + connectionString + TransportHelper.getReceiveQueryString(this, connection);
 
         log("websockettransport connecting to url:" + url, LogLevel.Verbose);
 
@@ -102,7 +93,6 @@ public class WebsocketTransport extends HttpClientTransport {
             public void onOpen(ServerHandshake serverHandshake) {
                 log("websockettransport Opened", LogLevel.Verbose);
                 mConnectionFuture.setResult(null);
-                mWebSocketClient.send("Hello from " + Build.MANUFACTURER + " " + Build.MODEL);
             }
 
             @Override
@@ -114,12 +104,13 @@ public class WebsocketTransport extends HttpClientTransport {
 
             @Override
             public void onClose(int i, String s, boolean b) {
-                log("websockettransport Closed " + s, LogLevel.Verbose);
+                mWebSocketClient.close();
             }
 
             @Override
             public void onError(Exception e) {
                 log("websockettransport Error " + e.getMessage(), LogLevel.Verbose);
+                mWebSocketClient.close();
             }
         };
         mWebSocketClient.connect();
@@ -133,5 +124,12 @@ public class WebsocketTransport extends HttpClientTransport {
 
 
         return mConnectionFuture;
+    }
+
+    @Override
+    public SignalRFuture<Void> send(ConnectionBase connection, String data, DataResultCallback callback) {
+        log("about to send:" + data, LogLevel.Verbose);
+        mWebSocketClient.send(data);
+        return new UpdateableCancellableFuture<Void>(null);
     }
 }
