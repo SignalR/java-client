@@ -7,6 +7,7 @@ See License.txt in the project root for license information.
 package microsoft.aspnet.signalr.client.hubs;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -240,6 +241,108 @@ public class HubProxy {
                             if (result.getResult() != null && resultClass != null) {
                                 log("Found result invoking method on hub: " + result.getResult(), LogLevel.Information);
                                 resultObject = mConnection.getGson().fromJson(result.getResult(), resultClass);
+                            }
+                        } catch (Exception e) {
+                            errorHappened = true;
+                            resultFuture.triggerError(e);
+                        }
+
+                        if (!errorHappened) {
+                            try {
+                                resultFuture.setResult(resultObject);
+                            } catch (Exception e) {
+                                resultFuture.triggerError(e);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        HubInvocation hubData = new HubInvocation();
+        hubData.setHub(mHubName);
+        hubData.setMethod(method);
+        hubData.setArgs(jsonArguments);
+        hubData.setCallbackId(callbackId);
+
+        if (mState.size() != 0) {
+            hubData.setState(mState);
+        }
+
+        final SignalRFuture<Void> sendFuture = mConnection.send(hubData);
+
+        resultFuture.onCancelled(new Runnable() {
+
+            @Override
+            public void run() {
+                mConnection.removeCallback(callbackId);
+            }
+        });
+
+        resultFuture.onError(new ErrorCallback() {
+
+            @Override
+            public void onError(Throwable error) {
+                sendFuture.triggerError(error);
+            }
+        });
+
+        return resultFuture;
+    }
+    
+    /**
+     * Overload of 'invoke' hub method that takes a type instead of class for GSON deserialisation
+     * 
+     * @param method
+     *            Method name
+     * @param args
+     *            Method arguments
+     * @return A Future for the operation, that will return the method result
+     */
+    public <E> SignalRFuture<E> invoke(final Class<E> resultClass, final Type resultType, final String method, Object... args) {
+        if (method == null) {
+            throw new IllegalArgumentException("method cannot be null");
+        }
+
+        if (args == null) {
+            throw new IllegalArgumentException("args cannot be null");
+        }
+
+        log("Invoking method on hub: " + method, LogLevel.Information);
+
+        JsonElement[] jsonArguments = new JsonElement[args.length];
+
+        for (int i = 0; i < args.length; i++) {
+            jsonArguments[i] = mConnection.getGson().toJsonTree(args[i]);
+        }
+
+        final SignalRFuture<E> resultFuture = new SignalRFuture<E>();
+
+        final String callbackId = mConnection.registerCallback(new Action<HubResult>() {
+
+            @Override
+            public void run(HubResult result) {
+                log("Executing invocation callback for: " + method, LogLevel.Information);
+                if (result != null) {
+                    if (result.getError() != null) {
+                        if (result.isHubException()) {
+                            resultFuture.triggerError(new HubException(result.getError(), result.getErrorData()));
+                        } else {
+                            resultFuture.triggerError(new Exception(result.getError()));
+                        }
+                    } else {
+                        boolean errorHappened = false;
+                        E resultObject = null;
+                        try {
+                            if (result.getState() != null) {
+                                for (String key : result.getState().keySet()) {
+                                    setState(key, result.getState().get(key));
+                                }
+                            }
+
+                            if (result.getResult() != null && resultType != null) {
+                                log("Found result invoking method on hub: " + result.getResult(), LogLevel.Information);
+                                resultObject = mConnection.getGson().fromJson(result.getResult(), resultType);
                             }
                         } catch (Exception e) {
                             errorHappened = true;
