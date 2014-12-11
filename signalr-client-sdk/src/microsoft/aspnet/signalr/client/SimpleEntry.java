@@ -9,7 +9,7 @@ package microsoft.aspnet.signalr.client;
 import java.util.Map.Entry;
 
 /**
- * Simple Entry<K,V> implementation
+ * Simple Entry&lt;K,V&gt; implementation
  * 
  * @param <K>
  *            Key
