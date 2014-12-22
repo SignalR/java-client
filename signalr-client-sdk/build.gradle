@@ -1,0 +1,29 @@
+apply plugin: 'java'
+
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:0.11.+'
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
+
+dependencies {
+    compile 'com.google.code.gson:gson:2.2.4'
+    compile project(":websockets")
+}

@@ -1,0 +1,43 @@
+apply plugin: 'android-library'
+
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:0.11.+'
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion "19.1.0"
+
+    defaultConfig {
+        applicationId "microsoft.aspnet.signalr.client.http.android"
+        minSdkVersion 10
+        targetSdkVersion 19
+        versionCode 1
+        versionName "1.0"
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            resources.srcDirs = ['src']
+            res.srcDirs = ['res']
+        }
+
+    }
+}
+
+dependencies {
+    compile project(":signalr:signalr-client-sdk")
+}
