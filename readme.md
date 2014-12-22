@@ -23,22 +23,13 @@ See the [contribution  guidelines](https://github.com/SignalR/SignalR/blob/maste
 git clone git@github.com:SignalR/java-client.git (or https if you use https)
 ```
 
-Download the gson-2.2.2.jar library inside /signalr-client-sdk/libs/ (this can be downloaded using the getLibs.ps or getLibs.sh script)
+Open Android Studio, click "Import Non-Android Studio Project" and select the cloned directory 
 
-Import the following project into Eclipse workspace as Java projects:
-	- signalr-client-sdk
-	- signalr-client-tests
+Build the project.
 
-Import the following project into Eclipse workspace as an Android project (requires ADT with Android 4.4.2 SDK):
-	- signalr-client-sdk-android
+The signalr-client-sdk.jar will be generated inside the /signalr-client-sdk/build/libs folder
 
-Build the workspace.
-
-The signalr-client-sdk-android.jar will be generated inside the /signalr-client-sdk-android/bin folder
-
-If you are using Maven, you can generate the signalr-client-sdk JAR file building with Maven using the 'package' goal.
-Otherwise, right click the build.xml file inside signalr-client-sdk and run it as an Ant Build. It will package the classes compiled by Eclipse. The signalr-client-sdk.jar will be generated inside the bin folder.
-
+The signalr-client-sdk-android.aar will be generated inside the /signalr-client-sdk-android/build/outputs/aar folder
 
 ## Running the tests:
 	
@@ -46,12 +37,11 @@ Run the signalr-client-tests project as a JUnit test.
 
 ## Using the library in a Java application:
 
-Add the signalr-client-sdk.jar and gson-2.2.2.jar libraries to the project build path.
-
+Add the signalr-client-sdk.jar and gson library gradle dependencyto the project.
 
 ## Using the library in an Android application:
 
-Add the signalr-client-sdk.jar, signalr-client-sdk-android.jar and gson-2.2.2.jar libraries to the project libs folder. Those jar files will be automatically added as android libraries.
+Add the signalr-client-sdk.jar, signalr-client-sdk-android.jar gson library as a gradle dependency to the project.
 
 In the code, before using the library, initialize the platform to use android-specific libraries and compatibility with older Android versions:
 	- Platform.loadPlatformComponent(new AndroidPlatformComponent());

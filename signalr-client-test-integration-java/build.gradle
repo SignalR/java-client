@@ -2,5 +2,5 @@ apply plugin: 'java'
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.google.code.gson:gson:2.3'
+    compile project(':signalr-client-test-integration-base')
 }

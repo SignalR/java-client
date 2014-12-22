@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="client.signalr.aspnet.microsoft.signalr_client_sdk_android">
+
+    <application android:allowBackup="true">
+
+    </application>
+
+</manifest>
