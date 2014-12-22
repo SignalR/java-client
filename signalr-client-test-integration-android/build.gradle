@@ -1,10 +1,11 @@
-apply plugin: 'com.android.library'
+apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 21
     buildToolsVersion "21.1.2"
 
     defaultConfig {
+        applicationId "client.signalr.aspnet.microsoft.signalr_client_test_integration_android"
         minSdkVersion 8
         targetSdkVersion 21
         versionCode 1
@@ -16,10 +17,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    lintOptions {
+        abortOnError false
+    }
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:21.0.3'
-    compile project(':signalr-client-sdk')
+    compile project(':signalr-client-test-integration-base')
+    compile project(':signalr-client-sdk-android')
 }

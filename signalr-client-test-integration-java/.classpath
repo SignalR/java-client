@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<classpath>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/signalr-client-sdk"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/signalr-client-test-integration-base"/>
-	<classpathentry kind="lib" path="/signalr-client-sdk/lib/gson-2.2.2.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="output" path="bin"/>
-</classpath>
