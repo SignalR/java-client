@@ -109,7 +109,7 @@ class NetworkRunnable implements Runnable {
             if (mResponseStream != null) {
                 mResponseStream.close();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
         }
     }
 
