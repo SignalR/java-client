@@ -18,3 +18,9 @@ signalr-client-android-test-integration/libs/gson-2.2.2.jar
 signalr-client-test-integration-java/bin/microsoft/aspnet/signalr/client/test/integration/java/*.class
 build/
 *.iml
+
+local.properties
+
+.idea/*
+
+.gradle/*
