@@ -9,7 +9,7 @@
       <repository>
           <id>central</id>
           <name>Central</name>
-          <url>http://maven.eclipse.org/build</url>
+          <url>http://repo.maven.apache.org/maven2</url>
       </repository>
   </repositories>
   <build>
