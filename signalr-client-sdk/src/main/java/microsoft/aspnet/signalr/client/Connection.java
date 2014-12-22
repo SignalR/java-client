@@ -557,6 +557,11 @@ public class Connection implements ConnectionBase {
     }
 
     @Override
+    public void setGson(Gson gson) {
+        mGson = gson;
+    }
+
+    @Override
     public JsonParser getJsonParser() {
         return mJsonParser;
     }
