@@ -169,6 +169,11 @@ public interface ConnectionBase {
      * Returns the connection headers
      */
     Map<String, String> getHeaders();
+    
+    /**
+     * Add a header
+     */
+    void addHeader(String headerName, String headerValue);
 
     /**
      * Returns the Gson instance used by the connection
