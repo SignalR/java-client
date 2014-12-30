@@ -6,12 +6,12 @@ See License.txt in the project root for license information.
 
 package microsoft.aspnet.signalr.client.tests.util;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import microsoft.aspnet.signalr.client.ConnectionBase;
 import microsoft.aspnet.signalr.client.ConnectionState;
@@ -136,6 +136,10 @@ public class MockConnection implements ConnectionBase {
     @Override
     public Gson getGson() {
         return new Gson();
+    }
+
+    @Override
+    public void setGson(Gson gson) {
     }
 
     @Override
