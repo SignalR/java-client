@@ -21,6 +21,7 @@ import microsoft.aspnet.signalr.client.InvalidStateException;
 import microsoft.aspnet.signalr.client.LogLevel;
 import microsoft.aspnet.signalr.client.Logger;
 import microsoft.aspnet.signalr.client.Connection;
+import microsoft.aspnet.signalr.client.transport.LongPollingTransport;
 
 /**
  * Represents a SignalRConnection that implements the Hubs protocol
@@ -74,7 +75,8 @@ public class HubConnection extends Connection {
         super.onReceived(message);
 
         log("Processing message", LogLevel.Information);
-        if (getState() == ConnectionState.Connected) {
+        ConnectionState state = getState();
+        if (state == ConnectionState.Connected || (getTransportClass().equals(LongPollingTransport.class) && (state == ConnectionState.Connected || state == ConnectionState.Reconnecting))) {
             if (message.isJsonObject() && message.getAsJsonObject().has("I")) {
                 log("Getting HubResult from message", LogLevel.Verbose);
                 HubResult result = mGson.fromJson(message, HubResult.class);
