@@ -126,9 +126,31 @@ public class CustomSerializationTests {
     @Test
     public void testTimeParse() throws Exception {
 
-        assertNotNull(DateSerializer.deserialize("2014-03-29T00:00:00"));
-        assertNotNull(DateSerializer.deserialize("2014-03-29T00:00:00Z"));
-        assertNotNull(DateSerializer.deserialize("2014-03-29T00:00:00+00:00"));
-        assertNotNull(DateSerializer.deserialize("2014-03-29T00:00:00.Z"));
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+        calendar.set(2014, 3 - 1, 29, 12, 34, 56);
+
+        calendar.set(Calendar.MILLISECOND, 0);
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56."), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56Z"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.Z"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56+00:00"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.+00:00"), calendar.getTime());
+
+        calendar.set(Calendar.MILLISECOND, 700);
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.7"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.7Z"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.7+00:00"), calendar.getTime());
+
+        calendar.set(Calendar.MILLISECOND, 780);
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.78"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.78Z"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.78+00:00"), calendar.getTime());
+
+        calendar.set(Calendar.MILLISECOND, 789);
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.789"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.789Z"), calendar.getTime());
+        assertEquals(DateSerializer.deserialize("2014-03-29T12:34:56.789+00:00"), calendar.getTime());
     }
 }
