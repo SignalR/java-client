@@ -53,18 +53,26 @@ public class DateSerializer implements JsonSerializer<Date>, JsonDeserializer<Da
         return element;
     }
     
+
+    /**
+     * Normalize ISO-8601 formatted date to java format
+     */
     public static String normalize(String strVal) {
         String s;
 
+        if (strVal == null || strVal.length() < 19) {//"yyyy-MM-ddTHH:mm:dd".length()
+            throw new JsonParseException("Invalid length for: " + strVal);
+        }
+        
         //normalize time zone
-        if (strVal.endsWith("+00:00")) {
+        if ((strVal.lastIndexOf('+') == strVal.length() - 6) ||//"+08:00".length()
+                (strVal.lastIndexOf('-') == strVal.length() - 6)) {//"-08:00".length()
             s = strVal;
+        } else if (strVal.endsWith("Z")) {
+            // Change Z to +00:00 to adapt the string to a format
+            // that can be parsed in Java
+            s = strVal.substring(0, strVal.length() - 1) + "+00:00";//"Z".length()
         } else {
-            if (strVal.endsWith("Z")) {
-                // Change Z to +00:00 to adapt the string to a format
-                // that can be parsed in Java
-                strVal = strVal.substring(0, strVal.length() - "Z".length());
-            }
             s = strVal + "+00:00";
         }
 
