@@ -82,7 +82,13 @@ public class WebsocketTransport extends HttpClientTransport {
 
         URI uri;
         try {
-            uri = new URI(url);
+            if (url.startsWith("https://")) {
+                uri = new URI(url.replace("https://", "wss://"));
+            } else if (url.startsWith("http://")) {
+                uri = new URI(url.replace("http://", "ws://"));
+            } else {
+                uri = new URI(url);
+            }
         } catch (URISyntaxException e) {
             e.printStackTrace();
             mConnectionFuture.triggerError(e);
