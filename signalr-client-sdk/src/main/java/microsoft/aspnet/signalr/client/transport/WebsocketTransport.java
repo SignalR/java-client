@@ -31,7 +31,7 @@ import microsoft.aspnet.signalr.client.http.HttpConnection;
  * Created by stas on 07/07/14.
  */
 public class WebsocketTransport extends HttpClientTransport {
-
+    public static String mCertInString = "";
     private String mPrefix;
     private static final Gson gson = new Gson();
     WebSocketClient mWebSocketClient;
@@ -166,5 +166,42 @@ public class WebsocketTransport extends HttpClientTransport {
         } catch(com.google.gson.JsonSyntaxException ex) {
             return false;
         }
+    }
+    protected void setCertificateForWebsocket(WebSocketClient client)throws Exception{
+
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        WebSocketImpl.DEBUG = true;
+
+        Certificate ca = null;
+        InputStream stream = null;
+
+            try {
+
+                stream = new ByteArrayInputStream(mCertInString.getBytes(StandardCharsets.UTF_8));
+                ca = cf.generateCertificate(stream);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (stream != null) {
+                    stream.close();
+                }
+            }
+        if (stream != null) {
+            stream.close();
+        }
+
+            String keyStoreType = KeyStore.getDefaultType();
+            KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+            keyStore.load(null, null);
+            keyStore.setCertificateEntry("ca", ca);
+            String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+            TrustManagerFactory tmf = null;
+            tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
+            tmf.init(keyStore);
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, tmf.getTrustManagers(), null);
+            SSLSocketFactory factory = context.getSocketFactory();// (SSLSocketFactory) SSLSocketFactory.getDefault();
+            client.setSocket(factory.createSocket());
+           client.connect();
     }
 }
