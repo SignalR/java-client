@@ -1,14 +1,32 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.0.0-beta4'
+    }
+}
+
 apply plugin: 'com.android.library'
 
+ext {
+    PUBLISH_ARTIFACT_ID = 'signalr-client-sdk-android'
+    PUBLISH_GROUP_ID = 'com.skidson'
+    PUBLISH_VERSION = '1.0'
+}
+
 android {
-    compileSdkVersion 21
-    buildToolsVersion "21.1.2"
+    useLibrary 'org.apache.http.legacy'
+
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
 
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 21
         versionCode 1
-        versionName "1.0"
+        versionName PUBLISH_VERSION
     }
     buildTypes {
         release {
@@ -20,6 +38,7 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:21.0.3'
     compile project(':signalr-client-sdk')
 }
+
+apply from: project.rootProject.file('signalr-client-sdk-android/android-release-aar.gradle')
