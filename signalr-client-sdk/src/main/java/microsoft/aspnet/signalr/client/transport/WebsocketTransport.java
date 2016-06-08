@@ -1,4 +1,4 @@
-package android.mmnet.mmodal.com.activeauthentication;
+package microsoft.aspnet.signalr.client.transport;
 
 /*
 Copyright (c) Microsoft Open Technologies, Inc.
