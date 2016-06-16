@@ -175,6 +175,10 @@ public class HubProxy {
         }
     }
 
+    public void clearSubscriptions() {
+        mSubscriptions.clear();
+    }
+
     /**
      * Invokes a hub method
      * 
