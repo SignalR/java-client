@@ -160,7 +160,7 @@ public class MockConnection implements ConnectionBase {
     }
 
     @Override
-    public void onError(Throwable error, boolean mustCleanCurrentConnection) {
+    public void onError(Throwable error, boolean mustCleanCurrentConnection, SignalRFuture transportFuture) {
         // TODO Auto-generated method stub
 
     }
