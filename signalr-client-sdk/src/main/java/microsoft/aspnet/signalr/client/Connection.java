@@ -207,6 +207,11 @@ public class Connection implements ConnectionBase {
     public void setGroupsToken(String groupsToken) {
         mGroupsToken = groupsToken;
     }
+    
+    @Override
+    public void addHeader(String headerName, String headerValue) {
+        mHeaders.put(headerName, headerValue);
+    }
 
     @Override
     public Map<String, String> getHeaders() {
