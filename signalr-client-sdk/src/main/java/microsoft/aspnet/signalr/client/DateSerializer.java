@@ -28,6 +28,8 @@ public class DateSerializer implements JsonSerializer<Date>, JsonDeserializer<Da
 
     private static final int THREE_MILLISECONDS_DATE_FORMAT_LENGTH = 29;
 
+    private static final int NO_MILLISECONDS_DATE_FORMAT_LENGTH = 25;//"yyyy-MM-ddTHH:mm:dd+00:00".length()
+
     /**
      * Deserializes a JsonElement containing an ISO-8601 formatted date
      */
@@ -50,54 +52,71 @@ public class DateSerializer implements JsonSerializer<Date>, JsonDeserializer<Da
         JsonElement element = new JsonPrimitive(serialize(date));
         return element;
     }
+    
+
+    /**
+     * Normalize ISO-8601 formatted date to java format
+     */
+    public static String normalize(String strVal) {
+        String s;
+
+        if (strVal == null || strVal.length() < 19) {//"yyyy-MM-ddTHH:mm:dd".length()
+            throw new JsonParseException("Invalid length for: " + strVal);
+        }
+        
+        //normalize time zone
+        if ((strVal.lastIndexOf('+') == strVal.length() - 6) ||//"+08:00".length()
+                (strVal.lastIndexOf('-') == strVal.length() - 6)) {//"-08:00".length()
+            s = strVal;
+        } else if (strVal.endsWith("Z")) {
+            // Change Z to +00:00 to adapt the string to a format
+            // that can be parsed in Java
+            s = strVal.substring(0, strVal.length() - 1) + "+00:00";//"Z".length()
+        } else {
+            s = strVal + "+00:00";
+        }
+
+        try {
+            //normalize milliseconds
+            final int len = s.length();
+            if (len >= NO_MILLISECONDS_DATE_FORMAT_LENGTH) {
+                if (len == NO_MILLISECONDS_DATE_FORMAT_LENGTH) {
+                    // add dot and extra milliseconds characters
+                    s = s.substring(0, 19) + ".000" + s.substring(19);
+                } else if (len > THREE_MILLISECONDS_DATE_FORMAT_LENGTH) { // yyyy-MM-ddTHH:mm:dd.SSS+00:00
+                    // remove the extra milliseconds characters
+                    s = s.substring(0, 23) + s.substring(len - 6);
+                } else if (len < THREE_MILLISECONDS_DATE_FORMAT_LENGTH) {
+                    // add extra milliseconds characters
+                    int dif = (THREE_MILLISECONDS_DATE_FORMAT_LENGTH - len);
+
+                    String zeros = "";
+                    for (int i = 0; i < dif; i++) {
+                        zeros += "0";
+                    }
+                    s = s.substring(0, 20 + (3 - dif)) + zeros + s.substring(len - 6);
+                }
+
+                // Remove the ":" character to adapt the string to a
+                // format
+                // that can be parsed in Java
+                s = s.substring(0, 26) + s.substring(27);
+            } else {
+                throw new JsonParseException("Invalid length for: " + s);
+            }
+        } catch (IndexOutOfBoundsException e) {
+            throw new JsonParseException("Invalid length for: " + s);
+        }
+        
+        return s;
+    }
 
     /**
      * Deserializes an ISO-8601 formatted date
      */
     public static Date deserialize(String strVal) throws ParseException {
+        String s = normalize(strVal);
         
-    	String s;
-    	
-    	if(strVal.contains("+00:00")){
-    		strVal = strVal.replace("+00:00", "");
-    	}
-    	
-    	if(strVal.length() == 19){// adapt from format yyyy-MM-ddTHH:mm:dd
-    		s = strVal + ".+00:00";
-    	}else if(strVal.contains(".Z")){
-    		// Change .Z to +00:00 to adapt the string to a format
-            // that can be parsed in Java
-    		s = strVal.replace(".Z", ".+00:00");
-    	}else{ 
-    		// Change Z to +00:00 to adapt the string to a format
-            // that can be parsed in Java
-    		s = strVal.replace("Z", ".+00:00");
-    	}
-    	     
-        try {
-            // Remove the ":" character to adapt the string to a
-            // format
-            // that can be parsed in Java
-
-            if (s.length() > THREE_MILLISECONDS_DATE_FORMAT_LENGTH) { // yyyy-MM-ddTHH:mm:dd.SSS+00:00
-                // remove the extra milliseconds characters
-                s = s.substring(0, 23) + s.substring(s.length() - 6);
-            } else if (s.length() < THREE_MILLISECONDS_DATE_FORMAT_LENGTH) {
-                // add extra milliseconds characters
-                int dif = (THREE_MILLISECONDS_DATE_FORMAT_LENGTH - s.length());
-
-                String zeros = "";
-                for (int i = 0; i < dif; i++) {
-                    zeros += "0";
-                }
-                s = s.substring(0, 20 + (3 - dif)) + zeros + s.substring(s.length() - 6);
-            }
-
-            s = s.substring(0, 26) + s.substring(27);
-        } catch (IndexOutOfBoundsException e) {
-            throw new JsonParseException("Invalid length for: " + s);
-        }
-
         // Parse the well-formatted date string
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'.'SSSZ");
         dateFormat.setTimeZone(TimeZone.getDefault());
