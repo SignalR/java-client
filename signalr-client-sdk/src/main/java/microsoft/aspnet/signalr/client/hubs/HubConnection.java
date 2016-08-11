@@ -95,6 +95,12 @@ public class HubConnection extends Connection {
                     }
                 }
             } else {
+                System.out.println("==Message on receiving:"+message);
+                if (message == null) {
+
+                    onError(new Exception("Null Message received "),false);
+                    return;
+                }
                 HubInvocation invocation = mGson.fromJson(message, HubInvocation.class);
                 log("Getting HubInvocation from message", LogLevel.Verbose);
     

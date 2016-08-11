@@ -129,7 +129,8 @@ public class WebsocketTransport extends HttpClientTransport {
 
             @Override
             public void onError(Exception e) {
-
+                System.out.println("onErrorWebsocket:"+e.getStackTrace());
+                e.printStackTrace();
                 log("onError:"+e.getStackTrace().toString(),LogLevel.Information);
 
                 mWebSocketClient.close();
