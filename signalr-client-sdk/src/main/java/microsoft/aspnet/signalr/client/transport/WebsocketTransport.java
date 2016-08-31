@@ -1,23 +1,27 @@
+package microsoft.aspnet.signalr.client.transport;
+
 /*
 Copyright (c) Microsoft Open Technologies, Inc.
 All Rights Reserved
 See License.txt in the project root for license information.
 */
 
-package microsoft.aspnet.signalr.client.transport;
+import com.google.gson.Gson;
 
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.drafts.Draft_17;
+import org.java_websocket.exceptions.InvalidDataException;
+import org.java_websocket.framing.Framedata;
+import org.java_websocket.handshake.ServerHandshake;
+import org.java_websocket.util.Charsetfunctions;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 
-import com.google.gson.Gson;
-
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.exceptions.InvalidDataException;
-import org.java_websocket.framing.Framedata;
-import org.java_websocket.handshake.ServerHandshake;
-import org.java_websocket.util.Charsetfunctions;
+import javax.net.ssl.SSLSocketFactory;
 
 import microsoft.aspnet.signalr.client.ConnectionBase;
 import microsoft.aspnet.signalr.client.LogLevel;
@@ -25,10 +29,15 @@ import microsoft.aspnet.signalr.client.Logger;
 import microsoft.aspnet.signalr.client.SignalRFuture;
 import microsoft.aspnet.signalr.client.UpdateableCancellableFuture;
 import microsoft.aspnet.signalr.client.http.HttpConnection;
+import microsoft.aspnet.signalr.client.transport.ConnectionType;
+import microsoft.aspnet.signalr.client.transport.DataResultCallback;
+import microsoft.aspnet.signalr.client.transport.HttpClientTransport;
+
+
 
 /**
  * Implements the WebsocketTransport for the Java SignalR library
- * Created by stas on 07/07/14.
+ * Created by Sriram on 05/30/2016.
  */
 public class WebsocketTransport extends HttpClientTransport {
 
@@ -36,6 +45,7 @@ public class WebsocketTransport extends HttpClientTransport {
     private static final Gson gson = new Gson();
     WebSocketClient mWebSocketClient;
     private UpdateableCancellableFuture<Void> mConnectionFuture;
+    boolean isSsl = false;
 
     public WebsocketTransport(Logger logger) {
         super(logger);
@@ -64,7 +74,7 @@ public class WebsocketTransport extends HttpClientTransport {
         final String messageId = connection.getMessageId() != null ? connection.getMessageId() : "";
         final String groupsToken = connection.getGroupsToken() != null ? connection.getGroupsToken() : "";
         final String connectionData = connection.getConnectionData() != null ? connection.getConnectionData() : "";
-
+        log("connection Data:"+connectionData, LogLevel.Verbose);
 
         String url = null;
         try {
@@ -74,6 +84,16 @@ public class WebsocketTransport extends HttpClientTransport {
                     + "&groupsToken=" + URLEncoder.encode(groupsToken, "UTF-8")
                     + "&messageId=" + URLEncoder.encode(messageId, "UTF-8")
                     + "&transport=" + URLEncoder.encode(transport, "UTF-8");
+
+            if(url.startsWith("https://")){
+                log("Yes it is https",LogLevel.Verbose);
+                isSsl =true;
+                url = url.replace("https://", "wss://");
+            }else if(url.startsWith("http://")){
+                log("No it is not https",LogLevel.Verbose);
+                url = url.replace("http://", "ws://");
+            }
+            log("url:"+url,LogLevel.Verbose);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -89,7 +109,9 @@ public class WebsocketTransport extends HttpClientTransport {
             return mConnectionFuture;
         }
 
-        mWebSocketClient = new WebSocketClient(uri) {
+        //enabling websocketclient with headers
+        mWebSocketClient = new WebSocketClient(uri,new Draft_17(),connection.getHeaders(),0) {
+            private Thread writeThread;
             @Override
             public void onOpen(ServerHandshake serverHandshake) {
                 mConnectionFuture.setResult(null);
@@ -107,7 +129,11 @@ public class WebsocketTransport extends HttpClientTransport {
 
             @Override
             public void onError(Exception e) {
-                mWebSocketClient.close();
+                System.out.println("onErrorWebsocket:"+e);
+                e.printStackTrace();
+                log("onError:"+e.getStackTrace().toString(),LogLevel.Information);
+
+                //mWebSocketClient.close();
             }
 
             @Override
@@ -141,6 +167,16 @@ public class WebsocketTransport extends HttpClientTransport {
                 }
             }
         };
+        if(isSsl){
+            log("enabling SSL Connection",LogLevel.Information);
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+
+            try{
+                mWebSocketClient.setSocket(factory.createSocket());
+            }catch(IOException e1) {
+                e1.printStackTrace();
+            }
+        }
         mWebSocketClient.connect();
 
         connection.closed(new Runnable() {

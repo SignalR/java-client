@@ -101,6 +101,7 @@ public class HubProxy {
      */
     public Subscription subscribe(String eventName) {
         log("Subscribe to event " + eventName, LogLevel.Information);
+        System.out.println("Subscribe to event:"+eventName);
         if (eventName == null) {
             throw new IllegalArgumentException("eventName cannot be null");
         }
@@ -135,7 +136,7 @@ public class HubProxy {
 
         for (int j = 0; j < methods.length; j++) {
             final Method method = methods[j];
-
+            System.out.println("=Mes method name:"+method.getName());
             if (!EXCLUDED_METHODS.contains(method.getName())) {
                 Subscription subscription = subscribe(method.getName());
                 subscription.addReceivedHandler(new Action<JsonElement[]>() {
@@ -403,12 +404,14 @@ public class HubProxy {
      */
     void invokeEvent(String eventName, JsonElement[] args) throws Exception {
         if (eventName == null) {
+            System.out.println("==Mes event name is null");
             throw new IllegalArgumentException("eventName cannot be null");
         }
-
+        System.out.println("==Mes eventname:"+eventName);
         eventName = eventName.toLowerCase(Locale.getDefault());
-
+        System.out.println("==Mes mSubscription:"+mSubscriptions);
         if (mSubscriptions.containsKey(eventName)) {
+            System.out.println("==Mes subscriptions contains eventname:"+args);
             Subscription subscription = mSubscriptions.get(eventName);
             subscription.onReceived(args);
         }
