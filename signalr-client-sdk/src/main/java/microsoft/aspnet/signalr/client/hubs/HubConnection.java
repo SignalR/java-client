@@ -96,17 +96,18 @@ public class HubConnection extends Connection {
                 }
             } else {
                 System.out.println("==Message on receiving:"+message);
-                if (message == null) {
-
+                if (message == null ||message.toString().equals("null")) {
+                    System.out.println("==Mes Null message received");
                     onError(new Exception("Null Message received "),false);
                     return;
                 }
                 HubInvocation invocation = mGson.fromJson(message, HubInvocation.class);
+                System.out.println("==Mes " + invocation);
                 log("Getting HubInvocation from message", LogLevel.Verbose);
     
                 String hubName = invocation.getHub().toLowerCase(Locale.getDefault());
                 log("Message for: " + hubName, LogLevel.Verbose);
-    
+                System.out.println("==Mes MessageFor:"+hubName);
                 if (mHubs.containsKey(hubName)) {
                     HubProxy hubProxy = mHubs.get(hubName);
                     if (invocation.getState() != null) {
@@ -119,10 +120,12 @@ public class HubConnection extends Connection {
     
                     String eventName = invocation.getMethod().toLowerCase(Locale.getDefault());
                     log("Invoking event: " + eventName + " with arguments " + arrayToString(invocation.getArgs()), LogLevel.Verbose);
-    
+                    System.out.println("==Mes invoking event");
                     try {
                         hubProxy.invokeEvent(eventName, invocation.getArgs());
                     } catch (Exception e) {
+                        System.out.println("==Mes error in invocation");
+                        e.printStackTrace();
                         onError(e, false);
                     }
                 }
@@ -204,17 +207,19 @@ public class HubConnection extends Connection {
      */
     public HubProxy createHubProxy(String hubName) {
         if (mState != ConnectionState.Disconnected) {
+            System.out.println("=Mes disconnected state");
             throw new InvalidStateException(mState);
         }
 
         if (hubName == null) {
+            System.out.println("=Mes hubname cannot be null");
             throw new IllegalArgumentException("hubName cannot be null");
         }
 
         String hubNameLower = hubName.toLowerCase(Locale.getDefault());
 
         log("Creating hub proxy: " + hubNameLower, LogLevel.Information);
-
+        System.out.println("==Mes Creating hub proxy: " + hubNameLower);
         HubProxy proxy = null;
         if (mHubs.containsKey(hubNameLower)) {
             proxy = mHubs.get(hubNameLower);
