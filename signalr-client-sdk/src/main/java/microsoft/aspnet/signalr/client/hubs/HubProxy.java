@@ -456,7 +456,7 @@ public class HubProxy {
             public void run(E1 p1, E2 p2, E3 p3, E4 p4, E5 p5) {
                 handler.run(p1, p2, p3, p4, p5);
             }
-        }, parameter1, parameter2, parameter3, parameter4, parameter5);
+        }, new Class[]{parameter1, parameter2, parameter3, parameter4, parameter5});
     }
 
     public <E1, E2, E3, E4> void on(String eventName, final SubscriptionHandler4<E1, E2, E3, E4> handler, Class<E1> parameter1, Class<E2> parameter2,
