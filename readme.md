@@ -17,6 +17,44 @@ See the [documentation](http://asp.net/signalr)
 
 See the [contribution  guidelines](https://github.com/SignalR/SignalR/blob/master/CONTRIBUTING.md)
 
+## Installing through Gradle
+
+In the root of your build.gradle
+```
+allprojects {
+	repositories {
+		maven { url 'https://jitpack.io' }
+	}
+}
+```
+Then in dependencies
+```
+dependencies {
+	compile 'com.github.SignalR:java-client:master'
+}
+```
+
+## Installing through Maven
+
+Add the repository to your build file
+```
+<repositories>
+	<repository>
+	    <id>jitpack.io</id>
+	    <url>https://jitpack.io</url>
+	</repository>
+</repositories>
+```
+
+Add the dependency
+```
+<dependency>
+	<groupId>com.github.SignalR</groupId>
+	<artifactId>java-client</artifactId>
+	<version>master</version>
+</dependency>
+```
+
 ## Building the source
 
 ```
