@@ -99,10 +99,11 @@ public class WebsocketTransport extends HttpClientTransport {
             uri = new URI(url);
         } catch (URISyntaxException e) {
             e.printStackTrace();
-            mConnectionFuture.triggerError(e);
+            if (!mConnectionFuture.isCancelled()) {
+                mConnectionFuture.triggerError(e);
+            }
             return mConnectionFuture;
         }
-
         mWebSocketClient = new WebSocketClient(uri, new Draft_17(), connection.getHeaders(), 0) {
             @Override
             public void onOpen(ServerHandshake serverHandshake) {
@@ -122,6 +123,10 @@ public class WebsocketTransport extends HttpClientTransport {
             @Override
             public void onError(Exception e) {
                 mWebSocketClient.close();
+                e.printStackTrace();
+                if (!mConnectionFuture.isCancelled()) {
+                    mConnectionFuture.triggerError(e);
+                }
             }
 
             @Override
@@ -162,12 +167,16 @@ public class WebsocketTransport extends HttpClientTransport {
                 mWebSocketClient.setSocket(factory.createSocket());
             } catch (IOException e1) {
                 e1.printStackTrace();
+                e1.printStackTrace();
+                if (!mConnectionFuture.isCancelled()) {
+                    mConnectionFuture.triggerError(e1);
+                }
+                return mConnectionFuture;
             }
         }
 
-
-
         mWebSocketClient.connect();
+
 
         connection.closed(new Runnable() {
             @Override
