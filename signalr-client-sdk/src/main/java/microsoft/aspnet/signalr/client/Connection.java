@@ -464,40 +464,42 @@ public class Connection implements ConnectionBase {
             mAbortFuture = mTransport.abort(this);
 
             final Connection that = this;
-            mAbortFuture.onError(new ErrorCallback() {
+            if (mAbortFuture != null) {
+                mAbortFuture.onError(new ErrorCallback() {
 
-                @Override
-                public void onError(Throwable error) {
-                    synchronized (mStartLock) {
-                        that.onError(error, false);
-                        disconnect();
-                        mAborting = false;
+                    @Override
+                    public void onError(Throwable error) {
+                        synchronized (mStartLock) {
+                            if (that != null) that.onError(error, false);
+                            disconnect();
+                            mAborting = false;
+                        }
                     }
-                }
-            });
+                });
 
-            mAbortFuture.onCancelled(new Runnable() {
+                mAbortFuture.onCancelled(new Runnable() {
 
-                @Override
-                public void run() {
-                    synchronized (mStartLock) {
-                        log("Abort cancelled", LogLevel.Verbose);
-                        mAborting = false;
+                    @Override
+                    public void run() {
+                        synchronized (mStartLock) {
+                            log("Abort cancelled", LogLevel.Verbose);
+                            mAborting = false;
+                        }
                     }
-                }
-            });
+                });
 
-            mAbortFuture.done(new Action<Void>() {
+                mAbortFuture.done(new Action<Void>() {
 
-                @Override
-                public void run(Void obj) throws Exception {
-                    synchronized (mStartLock) {
-                        log("Abort completed", LogLevel.Information);
-                        disconnect();
-                        mAborting = false;
+                    @Override
+                    public void run(Void obj) throws Exception {
+                        synchronized (mStartLock) {
+                            log("Abort completed", LogLevel.Information);
+                            disconnect();
+                            mAborting = false;
+                        }
                     }
-                }
-            });
+                });
+            }
         }
     }
 
