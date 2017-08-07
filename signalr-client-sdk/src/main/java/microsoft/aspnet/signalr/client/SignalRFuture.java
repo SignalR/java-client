@@ -6,10 +6,10 @@ See License.txt in the project root for license information.
 
 package microsoft.aspnet.signalr.client;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
@@ -23,10 +23,10 @@ public class SignalRFuture<V> implements Future<V> {
     boolean mIsCancelled = false;
     boolean mIsDone = false;
     private V mResult = null;
-    private List<Runnable> mOnCancelled = new ArrayList<Runnable>();
-    private List<Action<V>> mOnDone = new ArrayList<Action<V>>();
+    private List<Runnable> mOnCancelled = new CopyOnWriteArrayList<Runnable>();
+    private List<Action<V>> mOnDone = new CopyOnWriteArrayList<Action<V>>();
     private Object mDoneLock = new Object();
-    private List<ErrorCallback> mErrorCallback = new ArrayList<ErrorCallback>();
+    private List<ErrorCallback> mErrorCallback = new CopyOnWriteArrayList<ErrorCallback>();
     private Queue<Throwable> mErrorQueue = new ConcurrentLinkedQueue<Throwable>();
     private Object mErrorLock = new Object();
     private Throwable mLastError = null;
