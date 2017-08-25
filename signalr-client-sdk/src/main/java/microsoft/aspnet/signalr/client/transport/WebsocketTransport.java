@@ -6,18 +6,13 @@ See License.txt in the project root for license information.
 
 package microsoft.aspnet.signalr.client.transport;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 
-import com.google.gson.Gson;
-
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.exceptions.InvalidDataException;
-import org.java_websocket.framing.Framedata;
-import org.java_websocket.handshake.ServerHandshake;
-import org.java_websocket.util.Charsetfunctions;
+import javax.net.ssl.SSLSocketFactory;
 
 import microsoft.aspnet.signalr.client.ConnectionBase;
 import microsoft.aspnet.signalr.client.LogLevel;
@@ -25,6 +20,14 @@ import microsoft.aspnet.signalr.client.Logger;
 import microsoft.aspnet.signalr.client.SignalRFuture;
 import microsoft.aspnet.signalr.client.UpdateableCancellableFuture;
 import microsoft.aspnet.signalr.client.http.HttpConnection;
+
+import org.java_websocket.client.WebSocketClient;
+import org.java_websocket.exceptions.InvalidDataException;
+import org.java_websocket.framing.Framedata;
+import org.java_websocket.handshake.ServerHandshake;
+import org.java_websocket.util.Charsetfunctions;
+
+import com.google.gson.Gson;
 
 /**
  * Implements the WebsocketTransport for the Java SignalR library
@@ -68,9 +71,9 @@ public class WebsocketTransport extends HttpClientTransport {
 
         String url = null;
         try {
-            url = connection.getUrl() + "signalr/" + connectionString + '?'
-                    + "connectionData=" + URLEncoder.encode(URLEncoder.encode(connectionData, "UTF-8"), "UTF-8")
-                    + "&connectionToken=" + URLEncoder.encode(URLEncoder.encode(connectionToken, "UTF-8"), "UTF-8")
+            url = connection.getUrl() + connectionString + '?'
+                    + "connectionData=" + URLEncoder.encode(connectionData, "UTF-8")
+                    + "&connectionToken=" + URLEncoder.encode(connectionToken, "UTF-8")
                     + "&groupsToken=" + URLEncoder.encode(groupsToken, "UTF-8")
                     + "&messageId=" + URLEncoder.encode(messageId, "UTF-8")
                     + "&transport=" + URLEncoder.encode(transport, "UTF-8");
@@ -80,15 +83,14 @@ public class WebsocketTransport extends HttpClientTransport {
 
         mConnectionFuture = new UpdateableCancellableFuture<Void>(null);
 
+        url = "wss" + url.substring(5); // replace https with wss
         URI uri;
         try {
             uri = new URI(url);
         } catch (URISyntaxException e) {
-            e.printStackTrace();
             mConnectionFuture.triggerError(e);
             return mConnectionFuture;
         }
-
         mWebSocketClient = new WebSocketClient(uri) {
             @Override
             public void onOpen(ServerHandshake serverHandshake) {
@@ -108,6 +110,7 @@ public class WebsocketTransport extends HttpClientTransport {
             @Override
             public void onError(Exception e) {
                 mWebSocketClient.close();
+                mConnectionFuture.triggerError(e);
             }
 
             @Override
@@ -141,6 +144,13 @@ public class WebsocketTransport extends HttpClientTransport {
                 }
             }
         };
+        
+        try {
+            mWebSocketClient.setSocket(SSLSocketFactory.getDefault().createSocket());
+        } catch (IOException e1) {
+            mConnectionFuture.triggerError(e1);
+            return mConnectionFuture;
+        }
         mWebSocketClient.connect();
 
         connection.closed(new Runnable() {
