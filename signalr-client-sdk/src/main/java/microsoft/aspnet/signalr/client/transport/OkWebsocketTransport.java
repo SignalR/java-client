@@ -34,18 +34,24 @@ public class OkWebsocketTransport extends HttpClientTransport {
 
     private static final String TAG = "WebsocketTransport";
 
-    private final OkHttpClient mOkHttpClient = new OkHttpClient();
+    private final OkHttpClient mOkHttpClient;
     private final ExecutorService mSendExecutor = Executors.newSingleThreadExecutor();
 
     private ConnectionWebSocketListener mCurrentWebSocketListener;
 
-    public OkWebsocketTransport(Logger logger) {
+    public OkWebsocketTransport(final Logger logger) {
+        this(new OkHttpClient(), logger);
+    }
+
+    public OkWebsocketTransport(OkHttpClient okHttpClient, final Logger logger) {
         super(logger);
+        mOkHttpClient = okHttpClient;
         mOkHttpClient.setReadTimeout(0, TimeUnit.MILLISECONDS);
     }
 
     public OkWebsocketTransport(Logger logger, HttpConnection httpConnection) {
         super(logger, httpConnection);
+        mOkHttpClient = new OkHttpClient();
     }
 
     @Override
