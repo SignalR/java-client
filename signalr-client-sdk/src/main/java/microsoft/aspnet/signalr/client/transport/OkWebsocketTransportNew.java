@@ -19,16 +19,13 @@ import java.util.concurrent.TimeUnit;
 
 import microsoft.aspnet.signalr.client.ConnectionBase;
 import microsoft.aspnet.signalr.client.Constants;
-import microsoft.aspnet.signalr.client.FutureHelper;
 import microsoft.aspnet.signalr.client.LogLevel;
 import microsoft.aspnet.signalr.client.Logger;
 import microsoft.aspnet.signalr.client.SignalRFuture;
 import microsoft.aspnet.signalr.client.UpdateableCancellableFuture;
-import microsoft.aspnet.signalr.client.http.HttpConnectionFuture;
 import microsoft.aspnet.signalr.client.http.InvalidHttpStatusCodeException;
-import microsoft.aspnet.signalr.client.http.Request;
-import microsoft.aspnet.signalr.client.http.Response;
 import okio.Buffer;
+import okio.BufferedSource;
 
 /**
  * Created by giovannimeo on 31/10/17.
@@ -69,7 +66,6 @@ public class OkWebsocketTransportNew implements ClientTransport {
         log("Start the negotiation with the server", LogLevel.Information);
 
         String url = connection.getUrl() + "negotiate" + TransportHelper.getNegotiateQueryString(connection);
-
         com.squareup.okhttp.Request request = new com.squareup.okhttp.Request.Builder()
                 .url(url)
                 .method(Constants.HTTP_GET, null)
@@ -77,8 +73,15 @@ public class OkWebsocketTransportNew implements ClientTransport {
                 .build();
 
         final SignalRFuture<NegotiationResponse> negotiationFuture = new SignalRFuture<NegotiationResponse>();
+        final Call call = mOkHttpClient.newCall(request);
+        negotiationFuture.onCancelled(new Runnable() {
+            @Override
+            public void run() {
+                call.cancel();
+            }
+        });
 
-        mOkHttpClient.newCall(request).enqueue(new Callback() {
+        call.enqueue(new Callback() {
             private void handleFailure(Exception e) {
                 log(e);
                 negotiationFuture.triggerError(new NegotiationException("There was a problem in the negotiation with the server", e));
@@ -104,6 +107,7 @@ public class OkWebsocketTransportNew implements ClientTransport {
                 }
             }
         });
+
 
 
 //        Request get = new Request(Constants.HTTP_GET);
@@ -143,61 +147,60 @@ public class OkWebsocketTransportNew implements ClientTransport {
 
     @Override
     public SignalRFuture<Void> start(ConnectionBase connection, ConnectionType connectionType, DataResultCallback callback) {
-        // TODO
-//        if (mCurrentWebSocketListener != null) {
-//            mCurrentWebSocketListener.connectionFuture.cancel();
-//            mCurrentWebSocketListener = null;
-//        }
-//
-//        final String connectionString = connectionType == ConnectionType.InitialConnection ? "connect" : "reconnect";
-//
-//        final String transport = getName();
-//        final String connectionToken = connection.getConnectionToken();
-//        final String messageId = connection.getMessageId() != null ? connection.getMessageId() : "";
-//        final String groupsToken = connection.getGroupsToken() != null ? connection.getGroupsToken() : "";
-//        final String connectionData = connection.getConnectionData() != null ? connection.getConnectionData() : "";
-//
-//        String url = null;
-//        try {
-//            url = connection.getUrl() + connectionString + '?'
-//                    + "connectionData=" + URLEncoder.encode(connectionData, "UTF-8")
-//                    + "&connectionToken=" + URLEncoder.encode(connectionToken, "UTF-8")
-//                    + "&groupsToken=" + URLEncoder.encode(groupsToken, "UTF-8")
-//                    + "&messageId=" + URLEncoder.encode(messageId, "UTF-8")
-//                    + "&transport=" + URLEncoder.encode(transport, "UTF-8");
-//        } catch (UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        }
-//
-//        final com.squareup.okhttp.Request.Builder reqBuilder = new com.squareup.okhttp.Request.Builder().get().url(url);
+        if (mCurrentWebSocketListener != null) {
+            mCurrentWebSocketListener.connectionFuture.cancel();
+            mCurrentWebSocketListener = null;
+        }
+
+        final String connectionString = connectionType == ConnectionType.InitialConnection ? "connect" : "reconnect";
+
+        final String transport = getName();
+        final String connectionToken = connection.getConnectionToken();
+        final String messageId = connection.getMessageId() != null ? connection.getMessageId() : "";
+        final String groupsToken = connection.getGroupsToken() != null ? connection.getGroupsToken() : "";
+        final String connectionData = connection.getConnectionData() != null ? connection.getConnectionData() : "";
+
+        String url = null;
+        try {
+            url = connection.getUrl() + connectionString + '?'
+                    + "connectionData=" + URLEncoder.encode(connectionData, "UTF-8")
+                    + "&connectionToken=" + URLEncoder.encode(connectionToken, "UTF-8")
+                    + "&groupsToken=" + URLEncoder.encode(groupsToken, "UTF-8")
+                    + "&messageId=" + URLEncoder.encode(messageId, "UTF-8")
+                    + "&transport=" + URLEncoder.encode(transport, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        final com.squareup.okhttp.Request.Builder reqBuilder = new com.squareup.okhttp.Request.Builder().get().url(url);
 //        for (Map.Entry<String, String> h : connection.getHeaders().entrySet()) {
 //            reqBuilder.addHeader(h.getKey(), h.getValue());
 //        }
-//
+
         final UpdateableCancellableFuture<Void> connectionFuture = new UpdateableCancellableFuture<Void>(null);
-//        final ConnectionWebSocketListener connectionWebSocketListener = new ConnectionWebSocketListener(connectionFuture, callback);
-//
-//        final WebSocketCall call = WebSocketCall.create(mOkHttpClient, reqBuilder.build());
-//        connectionFuture.onCancelled(new Runnable() {
-//            @Override
-//            public void run() {
-//                call.cancel();
-//                if (connectionWebSocketListener.abortCalled) return;
-//                final WebSocket webSocket = connectionWebSocketListener.webSocket;
-//                if (webSocket != null) {
-//                    try {
-//                        webSocket.close(1000, "");
-//                    } catch (IOException e) {
-//                        log(e);
-//                    }
-//                }
-//                connectionWebSocketListener.webSocket = null;
-//            }
-//        });
-//
-//        call.enqueue(connectionWebSocketListener);
-//
-//        mCurrentWebSocketListener = connectionWebSocketListener;
+        final ConnectionWebSocketListener connectionWebSocketListener = new ConnectionWebSocketListener(connectionFuture, callback);
+
+        final WebSocketCall call = WebSocketCall.create(mOkHttpClient, reqBuilder.build());
+        connectionFuture.onCancelled(new Runnable() {
+            @Override
+            public void run() {
+                call.cancel();
+                if (connectionWebSocketListener.abortCalled) return;
+                final WebSocket webSocket = connectionWebSocketListener.webSocket;
+                if (webSocket != null) {
+                    try {
+                        webSocket.close(1000, "");
+                    } catch (IOException e) {
+                        log(e);
+                    }
+                }
+                connectionWebSocketListener.webSocket = null;
+            }
+        });
+
+        call.enqueue(connectionWebSocketListener);
+
+        mCurrentWebSocketListener = connectionWebSocketListener;
         return connectionFuture;
     }
 
@@ -238,7 +241,7 @@ public class OkWebsocketTransportNew implements ClientTransport {
 
                 com.squareup.okhttp.Request postRequest = new com.squareup.okhttp.Request.Builder()
                         .url(url)
-                        .method(Constants.HTTP_POST, null)
+                        .method(Constants.HTTP_POST, RequestBody.create(null, ""))
                 // TODO .headers()
                         .build();
 
