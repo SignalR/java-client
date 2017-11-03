@@ -69,7 +69,6 @@ public class OkWebsocketTransportNew implements ClientTransport {
         com.squareup.okhttp.Request request = new com.squareup.okhttp.Request.Builder()
                 .url(url)
                 .method(Constants.HTTP_GET, null)
-        // TODO .headers()
                 .build();
 
         final SignalRFuture<NegotiationResponse> negotiationFuture = new SignalRFuture<NegotiationResponse>();
@@ -242,7 +241,6 @@ public class OkWebsocketTransportNew implements ClientTransport {
                 com.squareup.okhttp.Request postRequest = new com.squareup.okhttp.Request.Builder()
                         .url(url)
                         .method(Constants.HTTP_POST, RequestBody.create(null, ""))
-                // TODO .headers()
                         .build();
 
 
