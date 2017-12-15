@@ -29,9 +29,8 @@ public class LongPollingTransport extends HttpClientTransport {
 
     /**
      * Initializes the transport
-     * 
-     * @param logger
-     *            logger to log actions
+     *
+     * @param logger logger to log actions
      */
     public LongPollingTransport(Logger logger) {
         super(logger);
@@ -39,11 +38,9 @@ public class LongPollingTransport extends HttpClientTransport {
 
     /**
      * Initializes the transport with a logger
-     * 
-     * @param logger
-     *            Logger to log actions
-     * @param httpConnection
-     *            HttpConnection for the transport
+     *
+     * @param logger         Logger to log actions
+     * @param httpConnection HttpConnection for the transport
      */
     public LongPollingTransport(Logger logger, HttpConnection httpConnection) {
         super(logger, httpConnection);
@@ -66,13 +63,10 @@ public class LongPollingTransport extends HttpClientTransport {
 
     /**
      * Polls the server
-     * 
-     * @param connection
-     *            the implemented connection
-     * @param connectionUrl
-     *            the connection action url
-     * @param callback
-     *            callback to invoke when data is received
+     *
+     * @param connection    the implemented connection
+     * @param connectionUrl the connection action url
+     * @param callback      callback to invoke when data is received
      * @return Future for the operation
      */
     private SignalRFuture<Void> poll(final ConnectionBase connection, final String connectionUrl, final DataResultCallback callback) {
@@ -94,36 +88,41 @@ public class LongPollingTransport extends HttpClientTransport {
 
                 @Override
                 public void onResponse(Response response) {
-                    synchronized (mPollSync) {
-                        try {
+//                    synchronized (mPollSync) {
+                    try {
+
+                        synchronized (mPollSync) {
                             throwOnInvalidStatusCode(response);
 
                             if (connectionUrl != "poll") {
                                 mConnectionFuture.setResult(null);
                             }
+
                             log("Response received", LogLevel.Verbose);
-
                             log("Read response to the end", LogLevel.Verbose);
-                            String responseData = response.readToEnd();
-                            if (responseData != null) {
-                                responseData = responseData.trim();
-                            }
+                        }
 
-                            log("Trigger onData with data: " + responseData, LogLevel.Verbose);
-                            callback.onData(responseData);
+                        String responseData = response.readToEnd();
 
-                            if (!mConnectionFuture.isCancelled() && connection.getState() == ConnectionState.Connected) {
-                                log("Continue polling", LogLevel.Verbose);
-                                mConnectionFuture.setFuture(poll(connection, "poll", callback));
-                            }
-                        } catch (Throwable e) {
-                            if (!mConnectionFuture.isCancelled()) {
-                                log(e);
-                                mConnectionFuture.triggerError(e);
-                            }
+                        if (responseData != null) {
+                            responseData = responseData.trim();
+                        }
+
+                        log("Trigger onData with data: " + responseData, LogLevel.Verbose);
+                        callback.onData(responseData);
+
+                        if (!mConnectionFuture.isCancelled() && connection.getState() == ConnectionState.Connected) {
+                            log("Continue polling", LogLevel.Verbose);
+                            mConnectionFuture.setFuture(poll(connection, "poll", callback));
+                        }
+                    } catch (Throwable e) {
+                        if (!mConnectionFuture.isCancelled()) {
+                            log(e);
+                            mConnectionFuture.triggerError(e);
                         }
                     }
                 }
+//                }
             });
 
             future.onTimeout(new ErrorCallback() {
