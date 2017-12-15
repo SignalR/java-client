@@ -39,6 +39,21 @@ Run the signalr-client-tests project as a JUnit test.
 
 Add the signalr-client-sdk.jar and gson library gradle dependencyto the project.
 
+Gradle file sample
+```
+repositories {
+    jcenter()
+    maven { url 'http://clojars.org/repo' }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile ':signalr-client-sdk-android:1.0@aar'
+    compile 'com.google.code.gson:gson:2.3'
+    compile 'org.java-websocket:java-websocket:1.3.1'
+}
+```
+
 ## Using the library in an Android application:
 
 Add the signalr-client-sdk.jar, signalr-client-sdk-android.jar gson library as a gradle dependency to the project.
