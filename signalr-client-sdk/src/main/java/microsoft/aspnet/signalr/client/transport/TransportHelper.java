@@ -40,7 +40,7 @@ public class TransportHelper {
         try {
             json = connection.getJsonParser().parse(data).getAsJsonObject();
         } catch (Exception e) {
-            connection.onError(e, false);
+            connection.onError(e, false, null);
             return result;
         }
 

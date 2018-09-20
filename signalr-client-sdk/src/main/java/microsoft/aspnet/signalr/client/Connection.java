@@ -87,6 +87,8 @@ public class Connection implements ConnectionBase {
 
     private Object mStartLock = new Object();
 
+    private long mDisconnectTimeout;
+
     /**
      * Initializes the connection with an URL
      * 
@@ -317,15 +319,23 @@ public class Connection implements ConnectionBase {
      *            True if the connection must be cleaned when an error happens
      */
     private void handleFutureError(SignalRFuture<?> future, final boolean mustCleanCurrentConnection) {
+        handleFutureError(future, mustCleanCurrentConnection, null);
+    }
+
+    private void handleFutureError(SignalRFuture<?> future, final boolean mustCleanCurrentConnection, final SignalRFuture transportFuture) {
         final Connection that = this;
 
         future.onError(new ErrorCallback() {
 
             @Override
             public void onError(Throwable error) {
-                that.onError(error, mustCleanCurrentConnection);
+                that.onError(error, mustCleanCurrentConnection, transportFuture);
             }
         });
+    }
+
+    public void onError(Throwable error, boolean mustCleanCurrentConnection) {
+        onError(error, mustCleanCurrentConnection, null);
     }
 
     @Override
@@ -369,6 +379,7 @@ public class Connection implements ConnectionBase {
                             log("Keep alive timeout: " + negotiationResponse.getKeepAliveTimeout(), LogLevel.Verbose);
                             keepAliveData = new KeepAliveData((long) (negotiationResponse.getKeepAliveTimeout() * 1000));
                         }
+                        mDisconnectTimeout = (long) negotiationResponse.getDisconnectTimeout() * 1000;
 
                         startTransport(keepAliveData, false);
                     }
@@ -465,7 +476,6 @@ public class Connection implements ConnectionBase {
 
             final Connection that = this;
             mAbortFuture.onError(new ErrorCallback() {
-
                 @Override
                 public void onError(Throwable error) {
                     synchronized (mStartLock) {
@@ -488,9 +498,9 @@ public class Connection implements ConnectionBase {
             });
 
             mAbortFuture.done(new Action<Void>() {
-
                 @Override
                 public void run(Void obj) throws Exception {
+
                     synchronized (mStartLock) {
                         log("Abort completed", LogLevel.Information);
                         disconnect();
@@ -500,7 +510,7 @@ public class Connection implements ConnectionBase {
             });
         }
     }
-
+    
     @Override
     public void disconnect() {
         synchronized (mStateLock) {
@@ -527,6 +537,7 @@ public class Connection implements ConnectionBase {
             }
 
             mHeartbeatMonitor = null;
+
 
             if (mConnectionFuture != null) {
                 log("Stopping the connection", LogLevel.Verbose);
@@ -644,7 +655,7 @@ public class Connection implements ConnectionBase {
             }
 
             mHeartbeatMonitor = new HeartbeatMonitor();
-
+            mHeartbeatMonitor.setKeepAliveData(keepAliveData);
             mHeartbeatMonitor.setOnWarning(new Runnable() {
 
                 @Override
@@ -678,17 +689,9 @@ public class Connection implements ConnectionBase {
                 }
             });
 
-            handleFutureError(future, true);
+            handleFutureError(future, true, future);
 
             mConnectionFuture.setFuture(future);
-            future.onError(new ErrorCallback() {
-                
-                @Override
-                public void onError(Throwable error) {
-                    mConnectionFuture.triggerError(error);
-                }
-            });
-            
             mKeepAliveData = keepAliveData;
 
             try {
@@ -762,11 +765,35 @@ public class Connection implements ConnectionBase {
         return message;
     }
 
+    private static boolean canReconnectState(ConnectionState state) {
+        return state == ConnectionState.Connected || state == ConnectionState.Reconnecting;
+    }
+
+    private long mFirstReconnectAttemptTime;
+
     @Override
-    public void onError(Throwable error, boolean mustCleanCurrentConnection) {
+    public void onError(Throwable error, boolean mustCleanCurrentConnection, SignalRFuture transportFuture) {
         log(error);
         if (mustCleanCurrentConnection) {
-            if (mState == ConnectionState.Connected) {
+            boolean shouldReconnect = canReconnectState(mState);
+            if (shouldReconnect) {
+                if (mState == ConnectionState.Connected) {
+                    mFirstReconnectAttemptTime = System.currentTimeMillis();
+                } else if (System.currentTimeMillis() - mFirstReconnectAttemptTime >= mDisconnectTimeout) {
+                    shouldReconnect = false;
+                }
+            }
+
+            if (shouldReconnect) {
+                if (transportFuture == null) return;
+                if (mState != ConnectionState.Connected) {
+                    // TODO: this is so wrong...
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
                 log("Triggering reconnect", LogLevel.Verbose);
                 reconnect();
             } else {
@@ -796,11 +823,13 @@ public class Connection implements ConnectionBase {
      * Stops the heartbeat monitor and re-starts the transport
      */
     private void reconnect() {
-        if (mState == ConnectionState.Connected) {
-            log("Stopping Heartbeat monitor", LogLevel.Verbose);
-            mHeartbeatMonitor.stop();
-            log("Restarting the transport", LogLevel.Information);
-            startTransport(mHeartbeatMonitor.getKeepAliveData(), true);
+        synchronized (mStateLock) {
+            if (canReconnectState(mState)) {
+                log("Stopping Heartbeat monitor", LogLevel.Verbose);
+                mHeartbeatMonitor.stop();
+                log("Restarting the transport", LogLevel.Information);
+                startTransport(mHeartbeatMonitor.getKeepAliveData(), true);
+            }
         }
     }
 

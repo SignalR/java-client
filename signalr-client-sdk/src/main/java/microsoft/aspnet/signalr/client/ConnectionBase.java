@@ -75,7 +75,7 @@ public interface ConnectionBase {
      * @param mustCleanCurrentConnection
      *            True if the connection must be cleaned
      */
-    public void onError(Throwable error, boolean mustCleanCurrentConnection);
+    public void onError(Throwable error, boolean mustCleanCurrentConnection, SignalRFuture transportFuture);
 
     /**
      * Sets the handler for the "Received" event
